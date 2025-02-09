@@ -25,7 +25,7 @@ class Lyrics(commands.Cog):
 
     @commands.command(aliases=['lyric'])
     async def lyrics(self, ctx, *, query : str):
-        """Get the lyrics for a song"""
+        """Get lyrics for a song."""
         genius = Genius(self.bot.settings_dict.get("lyrics"))
         message = await ctx.send("Searching for lyrics...")
         song = None
