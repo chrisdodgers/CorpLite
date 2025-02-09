@@ -232,7 +232,8 @@ if __name__ == '__main__':
         {"name":"geopy"},
         {"name":"pyfiglet"},
         {"name":"regex"},
-        {"name":"py-cpuinfo"}
+        {"name":"py-cpuinfo"},
+        {"name":"lyricsgenius"}
     ])
     db_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),"Cogs","PandorasDB.py")
     if os.path.exists(db_path):
