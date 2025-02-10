@@ -7,10 +7,10 @@ from   html.parser import HTMLParser
 
 def setup(bot):
     settings = bot.get_cog("Settings")
-    if not bot.settings_dict.get("lyrics"):
+    if not bot.settings_dict.get("song"):
         if not bot.settings_dict.get("suppress_disabled_warnings"):     
-            print("\n!! Lyrics Cog has been disabled !!")
-            print("* Lyrics API key is missing ('lyrics' in settings_dict.json)")
+            print("\n!! Song Cog has been disabled !!")
+            print("* Genius API key is missing ('song' in settings_dict.json)")
             print("* You can get a free Genius API key by signing up at:")
             print("   https://genius.com/api-clients")
             return
@@ -26,12 +26,9 @@ class Song(commands.Cog):
         Utils = self.bot.get_cog("Utils")
         DisplayName = self.bot.get_cog("DisplayName")
 
-    @commands.command(aliases=['songinfo', 'music', 'musicinfo'])
-    async def song(self, ctx, *, query : str):
-        """Get data for a specific song."""
+    async def _getSong(self, query):
         print("Gathering song data for: " + query)
-        headers = {"Authorization" : "Bearer " + self.bot.settings_dict.get("lyrics"), "User-agent" : self.ua}
-        message = await ctx.send("Searching for song...")
+        headers = {"Authorization" : "Bearer " + self.bot.settings_dict.get("song"), "User-agent" : self.ua}
         song = None
         try:
             response = await DL.async_json('https://api.genius.com/search?q=' + quote(query), headers=headers)
@@ -42,12 +39,22 @@ class Song(commands.Cog):
                     break
 
         except Exception as e:
-            await message.edit(content=f"Error retrieving song data")
             print("Error retrieving song data")
             print(e)
-            return
+            return False
         
-        if song != None:
+        return song
+
+    @commands.command(aliases=['songinfo', 'music', 'musicinfo'])
+    async def song(self, ctx, *, query : str):
+        """Get data for a specific song."""
+        message = await ctx.send("Searching for song...")
+
+        song = await self._getSong(query)
+        
+        if song == False:
+            await message.edit(content=f"Error retrieving song data")
+        elif song != None:
             title = song['title']
             artist = song['primary_artist']['name']
             url = song['url']
@@ -70,28 +77,7 @@ class Song(commands.Cog):
     @commands.command(aliases=['lyric'])
     async def lyrics(self, ctx, *, query : str):
         """Get lyrics for a song."""
-        headers = {"Authorization" : "Bearer " + self.bot.settings_dict.get("lyrics")}
-        message = await ctx.send("Searching for lyrics...")
-        song = None
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get('https://api.genius.com/search?q=' + query, headers = headers) as data:
-                    if data.status != 200:
-                        await message.edit(content=f"Error retrieving song data")
-                        print("Error retrieving song data: "+str(data.status))
-                        return
-                    response = await data.json()
-                    songs = response['response']['hits']
-                    for hit in songs:
-                        if hit['type'] == "song":
-                            song = hit['result']
-                            break
 
-        except Exception as e:
-            await message.edit(content=f"Error retrieving song data")
-            print("Error retrieving song data")
-            print(e)
-            return
         
         if song != None:
             try:
