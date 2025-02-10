@@ -1,8 +1,9 @@
 import asyncio, discord, aiohttp
 from   discord.ext import commands
-from   Cogs import Utils, Message, DisplayName, PickList
+from   Cogs import Utils, Message, DisplayName, PickList, DL
 #from   lyricsgenius import Genius # TODO: Remove this line, and import in Install.py
 from   urllib.parse import quote
+from   html.parser import HTMLParser
 
 def setup(bot):
     settings = bot.get_cog("Settings")
@@ -20,6 +21,7 @@ class Song(commands.Cog):
     def __init__(self, bot, settings):
         self.bot = bot
         self.settings = settings
+        self.ua = 'CorpNewt DeepThoughtBot'
         global Utils, DisplayName
         Utils = self.bot.get_cog("Utils")
         DisplayName = self.bot.get_cog("DisplayName")
@@ -28,22 +30,16 @@ class Song(commands.Cog):
     async def song(self, ctx, *, query : str):
         """Get data for a specific song."""
         print("Gathering song data for: " + query)
-        headers = {"Authorization" : "Bearer " + self.bot.settings_dict.get("lyrics")}
+        headers = {"Authorization" : "Bearer " + self.bot.settings_dict.get("lyrics"), "User-agent" : self.ua}
         message = await ctx.send("Searching for song...")
         song = None
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get('https://api.genius.com/search?q=' + query, headers = headers) as data:
-                    if data.status != 200:
-                        await message.edit(content=f"Error retrieving song data")
-                        print("Error retrieving song data: "+str(data.status))
-                        return
-                    response = await data.json()
-                    songs = response['response']['hits']
-                    for hit in songs:
-                        if hit['type'] == "song":
-                            song = hit['result']
-                            break
+            response = await DL.async_json('https://api.genius.com/search?q=' + quote(query), headers=headers)
+            songs = response['response']['hits']
+            for hit in songs:
+                if hit['type'] == "song":
+                    song = hit['result']
+                    break
 
         except Exception as e:
             await message.edit(content=f"Error retrieving song data")
@@ -70,6 +66,67 @@ class Song(commands.Cog):
             print("Success: "+title+" by "+artist)
         else:
             message.edit(content="No results found for that query.")
+
+    @commands.command(aliases=['lyric'])
+    async def lyrics(self, ctx, *, query : str):
+        """Get lyrics for a song."""
+        headers = {"Authorization" : "Bearer " + self.bot.settings_dict.get("lyrics")}
+        message = await ctx.send("Searching for lyrics...")
+        song = None
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get('https://api.genius.com/search?q=' + query, headers = headers) as data:
+                    if data.status != 200:
+                        await message.edit(content=f"Error retrieving song data")
+                        print("Error retrieving song data: "+str(data.status))
+                        return
+                    response = await data.json()
+                    songs = response['response']['hits']
+                    for hit in songs:
+                        if hit['type'] == "song":
+                            song = hit['result']
+                            break
+
+        except Exception as e:
+            await message.edit(content=f"Error retrieving song data")
+            print("Error retrieving song data")
+            print(e)
+            return
+        
+        if song != None:
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get("https://genius.com/songs/"+song['id']) as data:
+                        if data.status != 200:
+                            await message.edit(content=f"Error retrieving lyrics")
+                            print("Error retrieving lyrics: "+str(data.status))
+                            return
+                        response = await data.text()
+                        lyrics = Utils.get_text_between(response, '<div class="lyrics">', '</div>')
+                        # Omit everything before the first occurrence of '[', as it contains data in weird format
+                        if '[' in lyrics:
+                            lyrics = lyrics.split('[', 1)[1]
+                            lyrics = '[' + lyrics
+                        if "You might also likeEmbed" in lyrics:
+                            lyrics = lyrics.split("You might also likeEmbed")[0].strip() # Remove "You might also likeEmbed" if it exists
+                        
+
+            except Exception as e:
+                await message.edit(content=f"Error retrieving lyrics")
+                print("Error retrieving lyrics")
+                print(e)
+                return
+            title = song['title']
+            artist = song['primary_artist']['name']
+            url = song['url']
+            art = song['song_art_image_thumbnail_url']
+            if art == None:
+                art = song['header_image_thumbnail_url']
+            
+        else:
+            message.edit(content="No results found for that query.")
+
+        
 
     # This version of lyrics command depends on lyricsgenius library, which combines API key and scraping.
     """@commands.command(aliases=['lyric'])
