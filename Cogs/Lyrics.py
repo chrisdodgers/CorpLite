@@ -48,22 +48,13 @@ class Lyrics(commands.Cog):
             if "You might also likeEmbed" in lyrics:
                 lyrics = lyrics.split("You might also likeEmbed")[0].strip()
 
-            if len(lyrics) < 1500:
-                await Message.EmbedText(
-                    title="**{}** by **{}**".format(title, artist),
-                    description=lyrics,
-                    color=ctx.author,
-                    footer="Powered by Genius",
-                    url=url
-                ).send(ctx, message)
-            else:
-                return await PickList.PagePicker(
-                    title="**{}** by **{}**".format(title, artist),
-                    ctx=ctx,
-                    description=lyrics,
-                    timeout=180,
-                    url=url,
-                    footer="Powered by Genius"
-                ).pick()
+            return await PickList.PagePicker(
+                title="**{}** by **{}**".format(title, artist),
+                ctx=ctx,
+                description=lyrics,
+                timeout=180,
+                url=url,
+                footer="Powered by Genius"
+            ).pick()
         else:
             message.edit(content="No results found for that query.")
