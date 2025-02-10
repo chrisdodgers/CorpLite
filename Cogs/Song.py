@@ -84,10 +84,12 @@ class Song(commands.Cog):
             print("Gathering Lyrics data")
             response = await DL.async_text(song['url'], headers={"User-agent" : self.ua})
             # Get Lyrics part
-            lyrics = re.findall('<div data-lyrics-container="true" class="Lyrics.+?">(.+?)</div><div class="RightSidebar', response)[0].replace("<br/>", "\n")
+            lyrics_parts = re.findall('<div data-lyrics-container="true" class="Lyrics.+?">(.+?)</div><div class="RightSidebar', response)
+            lyrics = '\n'.join(lyrics_parts) # Join all the lyrics parts together with a newline after each part
+            lyrics = lyrics.replace("<br/>", "\n")
             lyrics = html.unescape(lyrics) # Remove HTML escapes and replaces them with proper characters
-            lyrics = re.sub(r'<a.*?>|</a>', '', lyrics, flags=re.DOTALL) # Remove 'a' tags but keep the text inside
-            lyrics = re.sub(r'<span.*?>|</span>', '', lyrics, flags=re.DOTALL) # Remove 'span' tags but keep the text inside
+            #lyrics = re.sub(r'<a.*?>|</a>', '', lyrics, flags=re.DOTALL) # Remove 'a' tags but keep the text inside
+            #lyrics = re.sub(r'<span.*?>|</span>', '', lyrics, flags=re.DOTALL) # Remove 'span' tags but keep the text inside
             lyrics = re.sub(r'<[^>]+>', '', lyrics, flags=re.DOTALL) # Remove all HTML tags but keep the text inside
             if "You might also likeEmbed" in lyrics: # Remove "You might also likeEmbed" if it exists (this may be useful, I don't know if new code has this)
                 lyrics = lyrics.split("You might also likeEmbed")[0].strip() 
