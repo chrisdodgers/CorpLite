@@ -39,7 +39,11 @@ class Lyrics(commands.Cog):
             title = song.title
             artist = song.artist
             url = song.url
-            lyrics = "\n".join(song.lyrics.split("\n")[1:]) # Remove the first line, as it contains information in a weird format
+            lyrics = song.lyrics
+            # Omit everything before the first occurrence of '[', as it contains data in weird format
+            if '[' in lyrics:
+                lyrics = lyrics.split('[', 1)[1]
+                lyrics = '[' + lyrics  # Add the '[' back to the start
             # Remove "You might also likeEmbed" if it exists
             if "You might also likeEmbed" in lyrics:
                 lyrics = lyrics.split("You might also likeEmbed")[0].strip()
