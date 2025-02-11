@@ -25,7 +25,7 @@ class Song(commands.Cog):
         Utils = self.bot.get_cog("Utils")
         DisplayName = self.bot.get_cog("DisplayName")
 
-    async def _getSong(self, query):
+    async def _getSong(self, query : str):
         print("Gathering song data for: " + query)
         headers = {"Authorization" : "Bearer " + self.bot.settings_dict.get("song"), "User-agent" : self.ua}
         song = None
@@ -44,6 +44,19 @@ class Song(commands.Cog):
         
         return song
 
+    async def _songInfo(self, songid : int):
+        print("Gathering detailed song data for: " + str(songid))
+        headers = {"Authorization" : "Bearer " + self.bot.settings_dict.get("song"), "User-agent" : self.ua}
+        try:
+            response = await DL.async_json('https://api.genius.com/songs/' + str(songid), headers=headers)
+            song = response['response']
+            return song
+        except Exception as e:
+            print("Error retrieving detailed song data")
+            print(e)
+            return False
+
+
     @commands.command(aliases=['songinfo', 'music', 'musicinfo'])
     async def song(self, ctx, *, query : str):
         """Get data for a specific song."""
@@ -60,12 +73,22 @@ class Song(commands.Cog):
             art = song['song_art_image_thumbnail_url']
             if art == None:
                 art = song['header_image_thumbnail_url']
+            link = "Unable to obtain link"
+            detailedsongdata = await self._songInfo(song['id'])
+            detailedsongdata = detailedsongdata['song']
+            if detailedsongdata != False and detailedsongdata != None:
+                if "media" in detailedsongdata:
+                    link = ""
+                    for media in detailedsongdata['media']:
+                        if "url" in media: # This check should be unnecessary, but it is done just in case
+                            link += f"[{media['provider']}](<{media['url']}>)\n"
             embed = discord.Embed(
-                title = "**{}**".format(title),
+                title = "**{}** by **{}**".format(title, artist),
                 color = ctx.author.color,
-                description = artist,
+                description = link,
                 url = url
             )
+
             embed.set_thumbnail(url=art)
             embed.set_footer(text="Powered by Genius")
             await message.edit(content=None, embed=embed)
