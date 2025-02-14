@@ -24,7 +24,7 @@ You'll want to replace the values with your own.  The `prefix` key can be omitte
 
 A list of cogs, commands, and descriptions:
 
-[Actions](#actions), [Admin](#admin), [AmdArk](#amdark), [Ascii](#ascii), [Beer](#beer), [Bot](#bot), [BotAdmin](#botadmin), [CAH](#cah), [Calc](#calc), [Channel](#channel), [ChatterBot](#chatterbot), [Claptrap](#claptrap), [Clippy](#clippy), [CogManager](#cogmanager), [Comic](#comic), [DJRoles](#djroles), [Debugging](#debugging), [Dice](#dice), [Dictionary](#dictionary), [DisableCommand](#disablecommand), [Discogs](#discogs), [DrBeer](#drbeer), [EightBall](#eightball), [Embed](#embed), [Emoji](#emoji), [Encode](#encode), [Example](#example), [Face](#face), [Feed](#feed), [Fliptime](#fliptime), [GameLookup](#gamelookup), [Giphy](#giphy), [Groot](#groot), [Help](#help), [Humor](#humor), [Hw](#hw), [IntelArk](#intelark), [Invite](#invite), [JazUtils](#jazutils), [Jpeg](#jpeg), [LangFilter](#langfilter), [Lists](#lists), [Lyrics](#lyrics), [Lockdown](#lockdown), [MadLibs](#madlibs), [Minesweeper](#minesweeper), [Morse](#morse), [Music](#music), [Mute](#mute), [NvidiaArk](#nvidiaark), [OfflineUser](#offlineuser), [OpenCore](#opencore), [PciUsb](#pciusb), [Printer](#printer), [Profile](#profile), [Promote](#promote), [Quote](#quote), [RPS](#rps), [RateLimit](#ratelimit), [Reddit](#reddit), [Remind](#remind), [Responses](#responses), [Search](#search), [SecretSanta](#secretsanta), [Server](#server), [ServerStats](#serverstats), [Settings](#settings), [SettingsDict](#settingsdict), [Setup](#setup), [Spooktober](#spooktober), [Stream](#stream), [Strike](#strike), [Telephone](#telephone), [TempRole](#temprole), [Time](#time), [Translate](#translate), [Turret](#turret), [Uptime](#uptime), [UrbanDict](#urbandict), [UserRole](#userrole), [VoteKick](#votekick), [WatchURL](#watchurl), [Weather](#weather), [Welcome](#welcome), [Wiki](#wiki), [Xp](#xp), [XpBlock](#xpblock), [XpStack](#xpstack)
+[Actions](#actions), [Admin](#admin), [AmdArk](#amdark), [Ascii](#ascii), [Beer](#beer), [Bot](#bot), [BotAdmin](#botadmin), [CAH](#cah), [Calc](#calc), [Channel](#channel), [ChatterBot](#chatterbot), [Claptrap](#claptrap), [Clippy](#clippy), [CogManager](#cogmanager), [Comic](#comic), [DJRoles](#djroles), [Debugging](#debugging), [Dice](#dice), [Dictionary](#dictionary), [DisableCommand](#disablecommand), [Discogs](#discogs), [DrBeer](#drbeer), [EightBall](#eightball), [Embed](#embed), [Emoji](#emoji), [Encode](#encode), [Example](#example), [Face](#face), [Feed](#feed), [Fliptime](#fliptime), [GameLookup](#gamelookup), [Giphy](#giphy), [Groot](#groot), [Help](#help), [Humor](#humor), [Hw](#hw), [IntelArk](#intelark), [Invite](#invite), [JazUtils](#jazutils), [Jpeg](#jpeg), [LangFilter](#langfilter), [Lists](#lists), [Lockdown](#lockdown), [MadLibs](#madlibs), [Minesweeper](#minesweeper), [Morse](#morse), [Music](#music), [Mute](#mute), [NvidiaArk](#nvidiaark), [OfflineUser](#offlineuser), [OpenCore](#opencore), [PciUsb](#pciusb), [Printer](#printer), [Profile](#profile), [Promote](#promote), [Quote](#quote), [RPS](#rps), [RateLimit](#ratelimit), [Reddit](#reddit), [Remind](#remind), [Responses](#responses), [Search](#search), [SecretSanta](#secretsanta), [Server](#server), [ServerStats](#serverstats), [Settings](#settings), [SettingsDict](#settingsdict), [Setup](#setup), [Song](#song) [Spooktober](#spooktober), [Stream](#stream), [Strike](#strike), [Telephone](#telephone), [TempRole](#temprole), [Time](#time), [Translate](#translate), [Turret](#turret), [Uptime](#uptime), [UrbanDict](#urbandict), [UserRole](#userrole), [VoteKick](#votekick), [WatchURL](#watchurl), [Weather](#weather), [Welcome](#welcome), [Wiki](#wiki), [Xp](#xp), [XpBlock](#xpblock), [XpStack](#xpstack)
 
 ## Actions
 ####	Actions Cog (6 commands) - Actions.py Extension:
@@ -740,11 +740,6 @@ A list of cogs, commands, and descriptions:
 	  $tags 
 	   └─ List all tag in the tag list.
 
-## Lyrics
-####	Lyrics Cog (1 command) - Lyrics.py Extension:
-	  $lyrics (AKA: lyric)
-	   └─ Get lyrics for a song.
-
 ## Lockdown
 ####	Lockdown Cog (18 commands) - Lockdown.py Extension:
 	  $addlock [channel_list]
@@ -1304,6 +1299,13 @@ A list of cogs, commands, and descriptions:
 ####	Setup Cog (1 command) - Setup.py Extension:
 	  $setup 
 	   └─ Runs first-time setup (server owner only).
+
+## Song
+####	Lyrics Cog (2 commands) - Song.py Extension:
+	  $lyrics [query] (AKA: lyric)
+	   └─ Get lyrics for a song.
+   $song [query]
+    └─ Get details of a song.
 
 ## Spooktober
 ####	Spooktober Cog (1 command) - Spooktober.py Extension:
