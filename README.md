@@ -1305,7 +1305,7 @@ A list of cogs, commands, and descriptions:
 	  $lyrics [query] (AKA: lyric)
 	   └─ Get lyrics for a song.
    $song [query]
-    └─ Get details of a song.
+    └─ Get details for a specific song.
 
 ## Spooktober
 ####	Spooktober Cog (1 command) - Spooktober.py Extension:
