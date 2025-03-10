@@ -150,7 +150,7 @@ class Settings(commands.Cog):
 		self.bot = bot
 		self.flush_lock   = False # locked when flushing settings - so we can't flush multiple times
 		self.prefix = prefix
-		self.loop_list = []
+		self.is_current = False # Used for stopping loops
 		self.role = RoleManager(bot)
 		global Utils, DisplayName
 		Utils = self.bot.get_cog("Utils")
@@ -384,22 +384,22 @@ class Settings(commands.Cog):
 		self.flushSettings(self.file, True)
 		# Shutdown role manager loop
 		self.role.clean_up()
-		for task in self.loop_list:
-			task.cancel()
+		self.is_current = False
 
 	@commands.Cog.listener()
 	async def on_loaded_extension(self, ext):
 		# See if we were loaded
 		if not self._is_submodule(ext.__name__, self.__module__):
 			return
+		self.is_current = True
 		# Check all verifications - and start timers if needed
-		self.loop_list.append(self.bot.loop.create_task(self.checkAll()))
+		self.bot.loop.create_task(self.checkAll())
 		# Start the backup loop
-		self.loop_list.append(self.bot.loop.create_task(self.backup()))
+		self.bot.loop.create_task(self.backup())
 		# Start the settings loop
-		self.loop_list.append(self.bot.loop.create_task(self.flushLoop()))
+		self.bot.loop.create_task(self.flushLoop())
 		# Start the database loop
-		self.loop_list.append(self.bot.loop.create_task(self.flushLoopDB()))
+		self.bot.loop.create_task(self.flushLoopDB())
 		# Verify default roles
 		self.bot.loop.create_task(self.start_loading())
 
@@ -456,9 +456,10 @@ class Settings(commands.Cog):
 						if role == defRole:
 							# We have our role
 							foundRole = True
+							break
 					if not foundRole:
 						# We don't have the role - set a timer
-						self.loop_list.append(self.bot.loop.create_task(self.giveRole(member, server)))
+						self.bot.loop.create_task(self.giveRole(member, server))
 
 	async def giveRole(self, member, server):
 		# Start the countdown
@@ -472,6 +473,10 @@ class Settings(commands.Cog):
 		if timeRemain > 0:
 			# We have to wait for verification still
 			await asyncio.sleep(timeRemain)
+		
+		if not self.is_current:
+			# Not current anymore, bail
+			return
 		
 		# We're already verified - make sure we have the role
 		defRole = self.getServerStat(server, "DefaultRole")
@@ -489,8 +494,6 @@ class Settings(commands.Cog):
 					self.role.add_roles(member, [defRole])
 				except:
 					pass
-		if task in self.loop_list:
-			self.loop_list.remove(task)
 
 	async def backup(self):
 		# Works only for JSON files, not for database yet... :(
@@ -500,6 +503,9 @@ class Settings(commands.Cog):
 		# Wait initial time - then start loop
 		await asyncio.sleep(self.backupWait)
 		while not self.bot.is_closed():
+			if not self.is_current:
+				# Not current anymore, bail
+				return
 			# Initial backup - then wait
 			if not os.path.exists(self.backupDir):
 				# Create it
@@ -1075,6 +1081,9 @@ class Settings(commands.Cog):
 		print('Starting flush loop for database - runs every {} seconds.'.format(self.databaseDump))
 		while not self.bot.is_closed():
 			await asyncio.sleep(self.databaseDump)
+			if not self.is_current:
+				# Not current anymore, bail
+				return
 			# Flush settings asynchronously here
 			l = asyncio.get_event_loop()
 			await self.bot.loop.run_in_executor(None, self.flushSettings)
@@ -1084,6 +1093,9 @@ class Settings(commands.Cog):
 		print('Starting flush loop - runs every {} seconds.'.format(self.settingsDump))
 		while not self.bot.is_closed():
 			await asyncio.sleep(self.settingsDump)
+			if not self.is_current:
+				# Not current anymore, bail
+				return
 			# Flush settings asynchronously here
 			l = asyncio.get_event_loop()
 			await self.bot.loop.run_in_executor(None, self.flushSettings, self.file)
