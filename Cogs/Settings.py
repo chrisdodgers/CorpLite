@@ -309,11 +309,14 @@ class Settings(commands.Cog):
 
 	def list_backups(self, reverse=False, path_override=None):
 		backups = []
-		for b in os.listdir(path_override or self.backupDir):
+		backup_path = path_override or self.backupDir
+		if not os.path.isdir(backup_path):
+			return backups
+		for b in os.listdir(backup_path):
 			if b.startswith(".") or not b.lower().endswith(".json"):
 				# Invalid name
 				continue
-			b_path = os.path.join(self.backupDir,b)
+			b_path = os.path.join(backup_path,b)
 			if not os.path.isfile(b_path):
 				# Not a file, or doesn't exist
 				continue
