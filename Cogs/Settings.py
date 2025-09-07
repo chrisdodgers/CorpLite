@@ -307,12 +307,44 @@ class Settings(commands.Cog):
 			self.load_json(file)
 
 
+	def list_backups(self, reverse=False, path_override=None):
+		backups = []
+		for b in os.listdir(path_override or self.backupDir):
+			if b.startswith(".") or not b.lower().endswith(".json"):
+				# Invalid name
+				continue
+			b_path = os.path.join(self.backupDir,b)
+			if not os.path.isfile(b_path):
+				# Not a file, or doesn't exist
+				continue
+			backups.append(b_path)
+		return sorted(backups, key=os.path.getmtime, reverse=reverse)
+
+
 	def load_json(self, file):
-		if os.path.exists(file):
-			print("Since no mongoDB instance was running, I'm reverting back to the Settings.json")
-			self.serverDict = json.load(open(file))
-		else:
-			self.serverDict = {}
+		# Default to an empty dict
+		self.serverDict = {}
+		if file:
+			file_name = os.path.basename(file)
+			if os.path.isfile(file):
+				print("No mongoDB instance was running, reverting to JSON db".format(file_name))
+				available_settings = [file]+self.list_backups(reverse=True)
+				loaded = None
+				for x in available_settings:
+					print("Loading {}...".format(os.path.basename(x)))
+					try:
+						self.serverDict = json.load(open(x))
+						loaded = x
+					except Exception as e:
+						print("!! Failed to load {}: {}".format(os.path.basename(x),e))
+						continue
+					break # Got past loading
+				if loaded:
+					print("Loaded {}".format(os.path.basename(loaded)))
+			elif os.path.isdir(file):
+				print("{} is a directory - cannot load as JSON data".format(file_name))
+			else:
+				print("{} does not exist - using default settings".format(file_name))
 
 	def migrate(self, _file):
 		if os.path.exists(_file):
@@ -514,25 +546,27 @@ class Settings(commands.Cog):
 			timeStamp = datetime.today().strftime("%Y-%m-%d %H.%M")
 			self.flushSettings("./{}/Backup-{}.json".format(self.backupDir, timeStamp), True)
 
-			# Get curr dir and change curr dir
-			retval = os.getcwd()
-			os.chdir(self.backupDir)
-
 			# Get reverse sorted backups
-			backups = sorted(os.listdir(os.getcwd()), key=os.path.getmtime)
+			backups = self.list_backups()
 			numberToRemove = None
 			if len(backups) > self.backupMax:
 				# We have more than 100 backups right now, let's prune
 				numberToRemove = len(backups)-self.backupMax
-				for i in range(0, numberToRemove):
-					os.remove(backups[i])
-			
-			# Restore curr dir
-			os.chdir(retval)
-			if numberToRemove:
-				print("Settings Backed Up ({} removed): {}".format(numberToRemove, timeStamp))
-			else:
-				print("Settings Backed Up: {}".format(timeStamp))
+				numberRemoved = 0
+				for i in backups[:numberToRemove]:
+					try:
+						os.remove(i)
+						numberRemoved += 1
+					except Exception as e:
+						print("!! Failed to remove backup {}: {}".format(
+							os.path.basename(i),
+							e
+						))
+				numberToRemove = numberRemoved or None
+			print("Settings Backed Up{}: {}".format(
+				" ({:,} removed)".format(numberToRemove) if numberToRemove else "",
+				timeStamp
+			))
 			await asyncio.sleep(self.backupTime)
 			
 	def getOwners(self):
