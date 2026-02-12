@@ -42,10 +42,31 @@ Create a venv and use `Requirements.txt` to install the required packages.
 
 ![Screenshot3](https://github.com/chrisdodgers/CorpLite/blob/main/Demos/Screenshot3.png)
 
-# Current Cogs and Commands:
+# Current Extensions and Commands:
+```
+CogManager
+└─ CogManager
+Comic
+└─ Comic
+Encode
+└─ Encode
+IntelArk
+└─ IntelArk
+OpenCore
+└─ OpenCore
+PciUsb
+└─ PciUsb
+PickList
+└─ PickList
+Weather
+└─ Weather
+Cogless
+└─ Nullify
+└─ FuzzySearch
+└─ DL
+└─ Message
 
-![Screenshot4](https://github.com/chrisdodgers/CorpLite/blob/main/Demos/Screenshot4.png)
-
+```
 - **/iark** to search an Intel CPU model (e.g. i7-10700K) to get CPU/iGPU info.,
 - **/weg** to search WhateverGreen's IntelHD FAQ for device-id and connector info. Use the optional search_term to search using a big/little endian device-id, AAPL,ig-platform-id, or AAPL,snb-platform-id.,
 - **/alc** to search a codec name or device-id to get layouts for AppleALC.,
