@@ -3,10 +3,11 @@ import geopy.geocoders
 from geopy.adapters import AioHTTPAdapter
 from geopy.geocoders import Nominatim
 from   discord.ext import commands
+from discord import app_commands
 from   Cogs import Message, PickList, DL
 
-def setup(bot):
-	# Make sure we have the needed api key
+async def setup(bot):
+
 	if not bot.settings_dict.get("weather"):
 		if not bot.settings_dict.get("suppress_disabled_warnings"):
 			print("\n!! Weather Cog has been disabled !!")
@@ -16,7 +17,7 @@ def setup(bot):
 			print("* Or if you already have an account, create/copy your API key at:")
 			print("   https://home.openweathermap.org/api_keys\n")
 		return
-	bot.add_cog(Weather(bot))
+	await bot.add_cog(Weather(bot))
 
 # This is the Weather module
 class Weather(commands.Cog):
@@ -31,7 +32,7 @@ class Weather(commands.Cog):
 		self.weather_timeout = min(100,max(self.weather_timeout,5))
 		# Increase the default timeout to 15 seconds
 		geopy.geocoders.options.default_timeout = 15
-		self.user_agent = "CorpBot"
+		self.user_agent = "CorpLite"
 
 	def _get_output(self, w_text):
 		# https://openweathermap.org/weather-conditions
@@ -88,33 +89,42 @@ class Weather(commands.Cog):
 	def _r_to_k(self, r):
 		return self._f_to_k(self._r_to_f(r))
 
-	@commands.command(aliases=["tcon","tconv"])
-	async def tconvert(self, ctx, *, temp = None, from_type = None, to_type = None):
+	# Weather Slash Command:
+	# @app_commands.command(name="tconvert", description="Converts between Fahrenheit, Celsius, and Kelvin.")
+	@app_commands.describe(temp="Enter a temperature value (e.g. 72):")
+	@app_commands.describe(f="Enter what you want to convert from (e.g. Fahrenheit):")
+	@app_commands.describe(t="Enter what you want to convert to (e.g. Celsius):")
+	@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+	@app_commands.user_install()
+	async def tconvert(self, interaction: discord.Interaction, temp: str, f: str, t: str):
 		"""Converts between Fahrenheit, Celsius, and Kelvin.  From/To types can be:
 		(F)ahrenheit
 		(C)elsius
 		(K)elvin
 		(R)ankine"""
+
+		# Avoids "interaction did not respond" and also avoids a NoneType.to_dict() error
+		await interaction.response.defer(thinking=True)
 		
 		types = [ "Fahrenheit", "Celsius", "Kelvin", "Rankine" ]
-		usage = "Usage: `{}tconvert [temp] [from_type] [to_type]`".format(ctx.prefix)
+		usage = "Usage: `{}tconvert [temp] [from_type] [to_type]`"
 		if not temp:
-			return await ctx.send(usage)
+			return await interaction.followup.send(usage)
 		args = temp.split()
 		if not len(args) == 3:
-			return await ctx.send(usage)
+			return await interaction.followup.send(usage)
 		try:
 			f = next((x for x in types if x.lower() == args[1].lower() or x.lower()[:1] == args[1][:1].lower()), None)
 			t = next((x for x in types if x.lower() == args[2].lower() or x.lower()[:1] == args[2][:1].lower()), None)
 			m = float(args[0])
 		except:
-			return await ctx.send(usage)
+			return await interaction.followup.send(usage)
 		if not(f) or not(t):
 			# No valid types
-			return await ctx.send("Current temp types are: {}".format(", ".join(types)))
+			return await interaction.followup.send("Current temp types are: {}".format(", ".join(types)))
 		if f == t:
 			# Same in as out
-			return await ctx.send("No change when converting {} ---> {}.".format(f, t))
+			return await interaction.followup.send("No change when converting {} ---> {}.".format(f, t))
 		output = "I guess I couldn't make that conversion..."
 		try:
 			out_val = None
@@ -156,7 +166,7 @@ class Weather(commands.Cog):
 			)
 		except:
 			pass
-		await ctx.send(output)
+		await interaction.followup.send(output)
 
 	def get_weather_text(self, r = {}, show_current = True):
 		# Returns a string representing the weather passed
@@ -198,17 +208,30 @@ class Weather(commands.Cog):
 			minf, minc
 		)
 		return desc
-	
-	@commands.command(pass_context=True)
-	async def weather(self, ctx, *, city_name = None):
+
+	# Weather Slash Command:
+	@app_commands.command(name="weather", description="Get some weather")
+	@app_commands.describe(city_name="Enter a city name (e.g. Los Angeles)")
+	@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+	@app_commands.user_install()
+	async def weather(self, interaction: discord.Interaction, city_name: str):
 		"""Gets some weather."""
+
+		# Avoids "interaction did not respond" and also avoids a NoneType.to_dict() error
+		await interaction.response.defer(thinking=True)
+
+		# Load and define the Encode Cog
+		# weather_cog = bot.get_cog("Weather")
+
 		if city_name is None:
-			return await ctx.send("Usage: `{}weather [city_name]`".format(ctx.prefix))
+			return await interaction.followup.send("Usage: `/weather [city_name]`")
 		# Strip anything that's non alphanumeric or a space
 		city_name = re.sub(r'([^\s\w]|_)+', '', city_name)
-		message = await ctx.send("Gathering weather data...")
+		message = await interaction.followup.send("Gathering weather data...")
+
 		try:
-			async with Nominatim(user_agent=self.user_agent,adapter_factory=AioHTTPAdapter) as geolocator:
+			user_agent = "CorpLite"
+			async with Nominatim(user_agent=user_agent, adapter_factory=AioHTTPAdapter) as geolocator:
 				location = await geolocator.geocode(city_name)
 		except:
 			return await message.edit(content="Something went wrong geolocating...")
@@ -218,10 +241,12 @@ class Weather(commands.Cog):
 		# Just want the current weather
 		try:
 			r = await DL.async_json("http://api.openweathermap.org/data/2.5/weather?appid={}&lat={}&lon={}".format(
-				self.bot.settings_dict.get("weather",""),
+				self.bot.settings_dict.get("weather", ""),
 				location.latitude,
 				location.longitude
 			))
+
+
 		except:
 			return await message.edit(content="Something went wrong querying openweathermap.org...")
 		desc = self.get_weather_text(r)
@@ -229,19 +254,31 @@ class Weather(commands.Cog):
 		await Message.EmbedText(
 			title=title,
 			description=desc,
-			color=ctx.author,
+			color=interaction.user,
 			footer="Powered by OpenWeatherMap"
-		).send(ctx,message)
+		).send(interaction, message)
 
-	@commands.command(pass_context=True)
-	async def forecast(self, ctx, *, city_name = None):
+	# Forecast Slash Command:
+	@app_commands.command(name="forecast", description="Gets some weather, for 5 days or whatever.")
+	@app_commands.describe(city_name="Enter a city name (e.g. Los Angeles)")
+	@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+	@app_commands.user_install()
+	async def forecast(self, interaction: discord.Interaction, city_name: str):
 		"""Gets some weather, for 5 days or whatever."""
+
+		# Avoids "interaction did not respond" and also avoids a NoneType.to_dict() error
+		await interaction.response.defer(thinking=True)
+
+		# Load and define the Encode Cog
+		# weather_cog = bot.get_cog("Weather")
+
 		if city_name is None:
-			return await ctx.send("Usage: `{}forecast [city_name]`".format(ctx.prefix))
+			return await interaction.followup.send("Usage: `/forecast [city_name]`")
 		# Strip anything that's non alphanumeric or a space
 		city_name = re.sub(r'([^\s\w]|_)+', '', city_name)
-		message = await ctx.send("Gathering forecast data...")
+		message = await interaction.followup.send("Gathering forecast data...")
 		try:
+
 			async with Nominatim(user_agent=self.user_agent,adapter_factory=AioHTTPAdapter) as geolocator:
 				location = await geolocator.geocode(city_name)
 		except:
@@ -294,6 +331,6 @@ class Weather(commands.Cog):
 		await Message.Embed(
 			title=title,
 			fields=fields,
-			color=ctx.author,
+			color=interaction.user,
 			footer="Powered by OpenWeatherMap"
-		).send(ctx,message)
+		).send(interaction, message)

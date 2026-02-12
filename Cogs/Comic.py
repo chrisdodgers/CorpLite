@@ -1,5 +1,6 @@
-import random
+import random, discord
 import datetime as dt
+from discord import app_commands
 from discord.ext import commands
 from urllib.parse import unquote
 from html.parser import HTMLParser
@@ -9,9 +10,9 @@ except ImportError:
 	from html.parser import HTMLParser
 from Cogs import DL, Message
 
-def setup(bot):
-	settings = bot.get_cog("Settings")
-	bot.add_cog(Comic(bot, settings))
+async def setup(bot):
+	# settings = bot.get_cog("Settings")
+	await bot.add_cog(Comic(bot))
 
 class MLStripper(HTMLParser):
 	def __init__(self):
@@ -25,9 +26,9 @@ class MLStripper(HTMLParser):
 
 class Comic(commands.Cog):
 
-	def __init__(self, bot, settings):
+	def __init__(self, bot):
 		self.bot = bot
-		self.settings = settings
+		# self.settings = settings
 		self.max_tries = 10
 		self.ua = {
 			"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
@@ -313,6 +314,7 @@ class Comic(commands.Cog):
 			comic = await self._get_comic(comic_data,date,latest_tuple,archive_html=archive_html)
 			if comic:
 				return comic
+
 		return None
 
 	def _walk_replace(self,search_text,steps,key_dict=None):
@@ -414,13 +416,17 @@ class Comic(commands.Cog):
 		comic_desc = strip_tags(unquote(comic_desc)) if comic_desc else None
 		return {"image":comic_url,"url":url,"title":comic_title,"description":comic_desc}
 
-	async def _display_comic(self, ctx, comic, date = None, random = False):
+	async def _display_comic(self, interaction: discord.Interaction, comic, date = None, random = False):
+
+		# Avoids "interaction did not respond" and also avoids a NoneType.to_dict() error
+		await interaction.response.defer(thinking=True)
+
 		# Helper to display the comic, or post an error if there was an issue
 		message = await Message.EmbedText(
 			title="Locating comic...",
 			description="Feeling around in the dark trying to find a {} comic...".format(self.comic_data[comic]["name"]),
-			color=ctx.author
-		).send(ctx)
+			color=interaction.user
+		).send(interaction)
 		if date and isinstance(date,str):
 			date = date.replace("/","-").replace(".","-").replace(" ","-").replace(" ","-")
 			date= "-".join([x.rjust(2,"0") for x in date.split("-") if x][:3])
@@ -440,132 +446,171 @@ class Comic(commands.Cog):
 			return await Message.EmbedText(
 				title=self.comic_data[comic]["name"]+" Error",
 				description="Could not get {} :(".format(desc),
-				color=ctx.author
-			).edit(ctx,message)
-		comic_out["color"] = ctx.author
+				color=interaction.user
+			).edit(interaction,message)
+		comic_out["color"] = interaction.user
 		try:
-			return await Message.EmbedText(**comic_out).edit(ctx,message)
+			return await Message.EmbedText(**comic_out).edit(interaction,message)
 		except:
 			return await Message.EmbedText(
 				title=self.comic_data[comic]["name"]+" Error",
 				description="Could not get {} :(".format(desc),
-				color=ctx.author
-			).edit(ctx,message)
+				color=interaction.user
+			).edit(interaction,message)
 
-	@commands.command()
-	async def beetle(self, ctx, *, date=None):
-		"""Displays the Beetle Bailey comic for the passed date (MM-DD-YYYY) from 10-05-1953 to today if found."""
-		await self._display_comic(ctx, "beetle-bailey", date=date)
+	"""Commented a few comics out that don't seem to get used often, or ever from what I've observed in servers CorpBot exists in. Code has been updated for user slash commands and can be uncommented if you wish to use these."""
 
-	@commands.command()
-	async def randbeetle(self, ctx):
-		"""Displays a random Beetle Bailey comic from 10-05-1953 to today."""
-		await self._display_comic(ctx, "beetle-bailey", random=True)
+	#@app_commands.command(name="beetle", description="Get a Beetle Bailey comic.")
+	#@app_commands.describe(date="(Optional): Specify a date (e.g 02-11-2026)")
+	#@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+	#@app_commands.user_install()
+	#async def beetle(self, interaction, *, date: str | None = None):
+	#	"""Displays the Beetle Bailey comic for the passed date (MM-DD-YYYY) from 10-05-1953 to today if found."""
+	#	await self._display_comic(interaction, "beetle-bailey", date=date)
 
-	@commands.command()
-	async def calvin(self, ctx, *, date=None):
-		"""Displays the Calvin & Hobbes comic for the passed date (MM-DD-YYYY) from 11-18-1985 to today if found."""
-		await self._display_comic(ctx, "calvin", date=date)
+	#@app_commands.command(name="randbeetle", description="Get a random Beetle Bailey comic.")
+	#@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+	#@app_commands.user_install()
+	#async def randbeetle(self, interaction):
+	#	"""Displays a random Beetle Bailey comic from 10-05-1953 to today."""
+	#	await self._display_comic(interaction, "beetle-bailey", random=True)
 
-	@commands.command()
-	async def randcalvin(self, ctx):
-		"""Displays a random Calvin & Hobbes comic from 11-18-1985 to today."""
-		await self._display_comic(ctx, "calvin", random=True)
+	#@app_commands.command(name="calvin", description="Get a Calvin & Hobbes comic.")
+	#@app_commands.describe(date="(Optional): Specify a date (e.g 02-11-2026)")
+	#@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+	#@app_commands.user_install()
+	#async def calvin(self, interaction, *, date: str | None = None):
+	#	"""Displays the Calvin & Hobbes comic for the passed date (MM-DD-YYYY) from 11-18-1985 to today if found."""
+	#	await self._display_comic(interaction, "calvin", date=date)
 
-	@commands.command()
-	async def circus(self, ctx, *, date=None):
-		"""Displays the Family Circus comic for the passed date (MM-DD-YYYY) from 01-07-1996 to today if found."""
-		await self._display_comic(ctx, "family-circus", date=date)
+	#@app_commands.command(name="randcalvin", description="Get a random Calvin & Hobbes comic.")
+	#@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+	#@app_commands.user_install()
+	#async def randcalvin(self, interaction):
+	#	"""Displays a random Calvin & Hobbes comic from 11-18-1985 to today."""
+	#	await self._display_comic(interaction, "calvin", random=True)
 
-	@commands.command()
-	async def randcircus(self, ctx):
-		"""Displays a random Family Circus comic from 01-07-1996 to today."""
-		await self._display_comic(ctx, "family-circus", random=True)
+	#@app_commands.command(name="circus", description="Get a Family Circus comic.")
+	#@app_commands.describe(date="(Optional): Specify a date (e.g 02-11-2026)")
+	#@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+	#@app_commands.user_install()
+	#async def circus(self, interaction, *, date: str | None = None):
+	#	"""Displays the Family Circus comic for the passed date (MM-DD-YYYY) from 01-07-1996 to today if found."""
+	#	await self._display_comic(interaction, "family-circus", date=date)
 
-	'''@commands.command()
-	async def cyanide(self, ctx, *, date=None):
-		"""Displays the Cyanide & Happiness comic for the passed date (MM-DD-YYYY) from 01-26-2005 to today or comic number if found."""
-		try:
-			date = int(date)
-		except:
-			pass
-		await self._display_comic(ctx, "cyanide", date=date)
+	#@app_commands.command(name="randcircus", description="Get a random Family Circus comic.")
+	#@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+	#@app_commands.user_install()
+	#async def randcircus(self, interaction):
+	#	"""Displays a random Family Circus comic from 01-07-1996 to today."""
+	#	await self._display_comic(interaction, "family-circus", random=True)
 
-	@commands.command()
-	async def randcyanide(self, ctx):
-		"""Displays a random Cyanide & Happiness comic from 01-26-2005 to today."""
-		await self._display_comic(ctx, "cyanide", random=True)'''
 
-	@commands.command()
-	async def dilbert(self, ctx, *, date=None):
+	@app_commands.command(name="dilbert", description="Get a Dilbert comic.")
+	@app_commands.describe(date="(Optional): Specify a date (e.g 04-07-2013)")
+	@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+	@app_commands.user_install()
+	async def dilbert(self, interaction, *, date: str | None = None):
 		"""Displays the Dilbert comic for the passed date (MM-DD-YYYY) from 04-16-1989 to 03-12-2023 if found."""
-		await self._display_comic(ctx, "dilbert", date=date)
+		await self._display_comic(interaction, "dilbert", date=date)
 
-	@commands.command()
-	async def randilbert(self, ctx):
+	@app_commands.command(name="randilbert", description="Get a random Dilbert comic.")
+	@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+	@app_commands.user_install()
+	async def randilbert(self, interaction):
 		"""Displays a random Dilbert comic from 04-16-1989 to 03-12-2023."""
-		await self._display_comic(ctx, "dilbert", random=True)
+		await self._display_comic(interaction, "dilbert", random=True)
 
-	@commands.command()
-	async def farside(self, ctx, *, date=None):
-		"""Displays the Far Side comic for the passed date (MM-DD-YYYY) from 2 days ago to today if found."""
-		await self._display_comic(ctx, "farside", date=date)
+	#@app_commands.command(name="farside", description="Get a Far Side comic.")
+	#@app_commands.describe(date="(Optional): Specify a date (e.g 02-11-2026)")
+	#@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+	#@app_commands.user_install()
+	#async def farside(self, interaction, *, date: str | None = None):
+	#	"""Displays the Far Side comic for the passed date (MM-DD-YYYY) from 2 days ago to today if found."""
+	#	await self._display_comic(interaction, "farside", date=date)
 
-	@commands.command()
-	async def randfarside(self, ctx):
-		"""Displays a random Far Side comic from 2 days ago to today."""
-		await self._display_comic(ctx, "farside", random=True)
+	#@app_commands.command(name="randfarside", description="Get a random Far Side comic.")
+	#@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+	#@app_commands.user_install()
+	#async def randfarside(self, interaction):
+	#	"""Displays a random Far Side comic from 2 days ago to today."""
+	#	await self._display_comic(interaction, "farside", random=True)
 
-	@commands.command()
-	async def garfield(self, ctx, *, date=None):
+	@app_commands.command(name="garfield", description="Get a Garfield comic.")
+	@app_commands.describe(date="(Optional): Specify a date (e.g 06-19-1978)")
+	@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+	@app_commands.user_install()
+	async def garfield(self, interaction, *, date: str | None = None):
 		"""Displays the Garfield comic for the passed date (MM-DD-YYYY) from 06-19-1978 to today if found."""
-		await self._display_comic(ctx, "garfield", date=date)
+		await self._display_comic(interaction, "garfield", date=date)
 
-	@commands.command()
-	async def randgarfield(self, ctx):
+	@app_commands.command(name="randgarfield", description="Get a random Garfield comic.")
+	@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+	@app_commands.user_install()
+	async def randgarfield(self, interaction):
 		"""Displays a random Garfield comic from 06-19-1978 to today."""
-		await self._display_comic(ctx, "garfield", random=True)
+		await self._display_comic(interaction, "garfield", random=True)
 
-	@commands.command()
-	async def gmg(self, ctx, *, date=None):
+	@app_commands.command(name="gmg", description="Get a Garfield Minus Garfield comic.")
+	@app_commands.describe(date="(Optional): Specify a date (e.g 02-11-2026)")
+	@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+	@app_commands.user_install()
+	async def gmg(self, interaction, *, date: str | None = None):
 		"""Displays the Garfield Minus Garfield comic for the passed date (MM-DD-YYYY) from 02-13-2008 to today if found."""
-		await self._display_comic(ctx, "gmg", date=date)
+		await self._display_comic(interaction, "gmg", date=date)
 
-	@commands.command()
-	async def randgmg(self, ctx):
+	@app_commands.command(name="randgmg", description="Get a random Garfield Minus Garfield comic.")
+	@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+	@app_commands.user_install()
+	async def randgmg(self, interaction):
 		"""Displays a random Garfield Minus Garfield comic from 02-13-2008 to today."""
-		await self._display_comic(ctx, "gmg", random=True)
+		await self._display_comic(interaction, "gmg", random=True)
 
-	@commands.command()
-	async def peanuts(self, ctx, *, date=None):
+	@app_commands.command(name="peanuts", description="Get a Peanuts comic.")
+	@app_commands.describe(date="(Optional): Specify a date (e.g 02-11-2026)")
+	@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+	@app_commands.user_install()
+	async def peanuts(self, interaction, *, date: str | None = None):
 		"""Displays the Peanuts comic for the passed date (MM-DD-YYYY) from 10-02-1950 to today if found."""
-		await self._display_comic(ctx, "peanuts", date=date)
+		await self._display_comic(interaction, "peanuts", date=date)
 
-	@commands.command()
-	async def randpeanuts(self, ctx):
+	@app_commands.command(name="randpeanuts", description="Get a random Peanuts comic.")
+	@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+	@app_commands.user_install()
+	async def randpeanuts(self, interaction):
 		"""Displays a random Peanuts comic from 10-02-1950 to today."""
-		await self._display_comic(ctx, "peanuts", random=True)
+		await self._display_comic(interaction, "peanuts", random=True)
 
-	@commands.command()
-	async def smbc(self, ctx, date=None):
-		"""Displays the Saturday Morning Breakfast Cereal comic for the passed date (MM-DD-YYYY) from 09-05-2002 to today."""
-		await self._display_comic(ctx, "smbc", date=date)
+	#@app_commands.command(name="smbc", description="Get a Saturday Morning Breakfast comic.")
+	#@app_commands.describe(date="(Optional): Specify a date (e.g 02-11-2026)")
+	#@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+	#@app_commands.user_install()
+	#async def smbc(self, interaction, date: str | None = None):
+	#	"""Displays the Saturday Morning Breakfast Cereal comic for the passed date (MM-DD-YYYY) from 09-05-2002 to today."""
+	#	await self._display_comic(interaction, "smbc", date=date)
 
-	@commands.command()
-	async def randsmbc(self, ctx):
-		"""Displays a random Saturday Morning Breakfast Cereal comic from 09-05-2002 to today."""
-		await self._display_comic(ctx, "smbc", random=True)
+	#@app_commands.command(name="randsmbc", description="Get a random Saturday Morning Breakfast comic.")
+	#@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+	#@app_commands.user_install()
+	#async def randsmbc(self, interaction):
+	#	"""Displays a random Saturday Morning Breakfast Cereal comic from 09-05-2002 to today."""
+	#	await self._display_comic(interaction, "smbc", random=True)
 
-	@commands.command()
-	async def xkcd(self, ctx, *, date=None):
-		"""Displays the XKCD comic for the passed date (MM-DD-YYYY) from 01-01-2006 to today or comic number if found."""
-		try:
-			date = int(date)
-		except:
-			pass
-		await self._display_comic(ctx, "xkcd", date=date)
+	#@app_commands.command(name="xkcd", description="Get a XKCD comic.")
+	#@app_commands.describe(date="(Optional): Specify a date (e.g 02-11-2026)")
+	#@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+	#@app_commands.user_install()
+	#async def xkcd(self, interaction, *, date: str | None = None):
+	#	"""Displays the XKCD comic for the passed date (MM-DD-YYYY) from 01-01-2006 to today or comic number if found."""
+	#	try:
+	#		date = int(date)
+	#	except:
+	#		pass
+	#	await self._display_comic(interaction, "xkcd", date=date)
 
-	@commands.command()
-	async def randxkcd(self, ctx):
-		"""Displays a random XKCD comic from 01-01-2006 to today."""
-		await self._display_comic(ctx, "xkcd", random=True)
+	#@app_commands.command(name="randxkcd", description="Get a random XKCD comic.")
+	#@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+	#@app_commands.user_install()
+	#async def randxkcd(self, interaction):
+	#	"""Displays a random XKCD comic from 01-01-2006 to today."""
+	#	await self._display_comic(interaction, "xkcd", random=True)

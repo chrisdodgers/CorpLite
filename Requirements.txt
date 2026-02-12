@@ -1,0 +1,4 @@
+discord.py
+geopy
+regex
+pillow

@@ -1,22 +1,21 @@
 import discord, os, dis, subprocess
+from discord import app_commands
 from discord.ext import commands
-from Cogs import Settings, Message, PickList
+from Cogs import Message, PickList
 
-def setup(bot):
+async def setup(bot):
 	# Add the bot
-	try:
-		settings = bot.get_cog("Settings")
-	except:
-		settings = None
-	bot.add_cog(CogManager(bot, settings))
+	# Removed settings since it isn't being used with CorpLite at the current moment.
+	await bot.add_cog(CogManager(bot))
+
 
 class CogManager(commands.Cog):
 
 	# Init with the bot reference, and a reference to the settings var
-	def __init__(self, bot, settings):
-		self.preloads = ("Cogs.Utils","Cogs.DisplayName","Cogs.Settings","Cogs.Mute")
+	def __init__(self, bot):
+		self.preloads = ("Ignore This Until A Future Update",) # Temp removed DisplayName, Settings, and Mute since it is not currently being used for CorpLite. Crappy place holder yes, but retaining this logic until I revisit in a future update.
 		self.bot = bot
-		self.settings = settings
+
 
 	@commands.Cog.listener()
 	async def on_ready(self):
@@ -49,18 +48,18 @@ class CogManager(commands.Cog):
 				ext_list.append(ext)
 		return ext_list
 
-	def _load_extension(self, extension = None):
+	async def _load_extension(self, extension = None): # Updated to be async. See notes in Main.py calling this. Added await for each mention of self calling unload_extension/load_extension
 		# Loads extensions - if no extension passed, loads all
-		# starts with Settings, then Mute
+		# starts with Settings - removed Mute since CorpLite does not need this at the current time.
 		if extension is None:
 			# Load them all!
 			for x in self.preloads:
 				if x in self.bot.extensions:
 					self.bot.dispatch("unloaded_extension", self.bot.extensions.get(x))
-					try: self.bot.unload_extension(x)
+					try: await self.bot.unload_extension(x)
 					except: print("{} failed to unload!".format(x))
 				try:
-					self.bot.load_extension(x)
+					await self.bot.load_extension(x)
 					self.bot.dispatch("loaded_extension", self.bot.extensions.get(x))
 				except: print("{} failed to load!".format(x))
 			cog_count = len(self.preloads) # Assumes the prior 2 loaded correctly
@@ -68,7 +67,7 @@ class CogManager(commands.Cog):
 			# Load the rest of the cogs
 			for ext in os.listdir("Cogs"):
 				# Avoid reloading Settings and Mute
-				if ext.lower().endswith(".py") and not (ext.lower() in ["settings.py", "mute.py"]):
+				if ext.lower().endswith(".py") and not (ext.lower() in ["settings.py"]):
 					# Valid cog - load it
 					cog_count += 1
 					# Try unloading
@@ -76,14 +75,14 @@ class CogManager(commands.Cog):
 						# Only unload if loaded
 						if "Cogs."+ext[:-3] in self.bot.extensions:
 							self.bot.dispatch("unloaded_extension", self.bot.extensions.get("Cogs."+ext[:-3]))
-							self.bot.unload_extension("Cogs."+ext[:-3])
+							await self.bot.unload_extension("Cogs."+ext[:-3])
 					except Exception as e:
 						print("{} failed to unload!".format(ext[:-3]))
 						print("    {}".format(e))
 						pass
 					# Try to load
 					try:
-						self.bot.load_extension("Cogs." + ext[:-3])
+						await self.bot.load_extension("Cogs." + ext[:-3])
 						self.bot.dispatch("loaded_extension", self.bot.extensions.get("Cogs."+ext[:-3]))
 						cog_loaded += 1
 					except Exception as e:
@@ -108,14 +107,14 @@ class CogManager(commands.Cog):
 							# Only unload if loaded
 							if "Cogs."+e[:-3] in self.bot.extensions:
 								self.bot.dispatch("unloaded_extension", self.bot.extensions.get("Cogs."+e[:-3]))
-								self.bot.unload_extension("Cogs."+e[:-3])
+								await self.bot.unload_extension("Cogs."+e[:-3])
 						except Exception as er:
 							print("{} failed to unload!".format(e[:-3]))
 							print("    {}".format(er))
 							pass
 						# Try to load
 						try:
-							self.bot.load_extension("Cogs."+e[:-3])
+							await self.bot.load_extension("Cogs."+e[:-3])
 							self.bot.dispatch("loaded_extension", self.bot.extensions.get("Cogs."+e[:-3]))
 							success += 1
 						except Exception as er:
@@ -140,37 +139,16 @@ class CogManager(commands.Cog):
 	# Proof of concept stuff for reloading cog/extension
 	def _is_submodule(self, parent, child):
 		return parent == child or child.startswith(parent + ".")
-	
-	@commands.command(pass_context=True)
-	async def imports(self, ctx, *, extension = None):
-		"""Outputs the extensions imported by the passed extension."""
-		if extension is None:
-			# run the extensions command
-			await ctx.invoke(self.extensions)
-			return
-		for ext in os.listdir("Cogs"):
-			# Avoid reloading Settings and Mute
-			if not ext.lower().endswith(".py"):
-				continue
-			if ext[:-3].lower() == extension.lower():
-				# Found it
-				import_list = self._get_imports(ext)
-				if not len(import_list):
-					await ctx.send("That extension has no local extensions imported.")
-				else:
-					await ctx.send("Imports:\n\n{}".format(", ".join(import_list)))
-				return
-		await cxt.send("I couldn't find that extension...")
 
-	@commands.command(aliases=["extensions","ext"])
-	async def extension(self, ctx, *, extension = None):
+	# Called by /extensions and /import - this function is no longer nested in the extensions command and is instead now check_extension called by it and import.
+	async def check_extension(self, interaction: discord.Interaction, extension: str | None = None):
 		"""Outputs the cogs and command count for the passed extension - or all extensions and their corresponding cogs if none passed."""
 
 		# Build our extensions dictionary
 		ext_dict = {}
 		for e in self.bot.extensions:
 			ext_name = str(e)[5:]
-			cog_list = ext_dict.get(ext_name,[])
+			cog_list = ext_dict.get(ext_name, [])
 			b_ext = self.bot.extensions.get(e)
 			hidden = False
 			for cog in self.bot.cogs:
@@ -181,139 +159,114 @@ class CogManager(commands.Cog):
 				commands = b_cog.get_commands()
 				if commands and all((x.hidden for x in commands)):
 					hidden = True
-					continue # All commands are hidden
+					continue  # All commands are hidden
 				# Submodule - add it to the list
 				cog_list.append(str(cog))
-			if hidden: continue # Don't save hidden cogs
+			if hidden: continue  # Don't save hidden cogs
 			# Retain any cogs located for the extension here
 			if cog_list:
 				ext_dict[ext_name] = cog_list
 			else:
-				cogless = ext_dict.get("Cogless",[])
+				cogless = ext_dict.get("Cogless", [])
 				cogless.append(ext_name)
 				ext_dict["Cogless"] = cogless
 		# Check if we got anything
 		if not ext_dict:
 			return await Message.Embed(
 				title="No Extensions Found",
-				color=ctx.author
-			).send(ctx)
+				color=interaction.user
+			).send(interaction)
 		# Check if we're searching - and retrieve the extension if so
 		fields = []
 		if extension:
 			# Map the key to the first match - case-insensitive
-			ext_name = next((x for x in ext_dict if x.lower() == extension.lower()),None)
+			ext_name = next((x for x in ext_dict if x.lower() == extension.lower()), None)
 			if not ext_name:
 				return await Message.Embed(
 					title="Extension Not Found",
 					description="Could not find an extension by that name.",
-					color=ctx.author
-				).send(ctx)
+					color=interaction.user
+				).send(interaction)
 			if ext_name == "Cogless":
 				title = "Extensions Without Cogs ({:,} Total)".format(len(ext_dict[ext_name]))
 				fields.append({
-					"name":"Cogless - Each Has 0 Commands",
-					"value":"\n".join(["`└─ {}`".format(x) for x in ext_dict[ext_name]]),
-					"inline":True
+					"name": "Cogless - Each Has 0 Commands",
+					"value": "\n".join(["`└─ {}`".format(x) for x in ext_dict[ext_name]]),
+					"inline": True
 				})
 			else:
-				title = "{} Extension ({:,} Total Cog{})".format(ext_name,len(ext_dict[ext_name]),"" if len(ext_dict[ext_name])==1 else "s")
+				title = "{} Extension ({:,} Total Cog{})".format(ext_name, len(ext_dict[ext_name]),
+																 "" if len(ext_dict[ext_name]) == 1 else "s")
 				# Got the target extension - gather its info
 				for cog in ext_dict[ext_name]:
-					try: comms = len([x for x in self.bot.get_cog(cog).get_commands() if not x.hidden])
-					except: comms = 0 # Zero it out if it's not a cog, or has none
+					try:
+						comms = len([x for x in self.bot.get_cog(cog).get_commands() if not x.hidden])
+					except:
+						comms = 0  # Zero it out if it's not a cog, or has none
 					fields.append({
-						"name":cog,
-						"value":"`└─ {:,} command{}`".format(comms,"" if comms==1 else "s"),
-						"inline":True
+						"name": cog,
+						"value": "`└─ {:,} command{}`".format(comms, "" if comms == 1 else "s"),
+						"inline": True
 					})
 		else:
 			# We're listing them all
 			title = "All Extensions ({:,} Total)".format(len(ext_dict))
-			ext_list = [x for x in sorted(list(ext_dict),key=lambda x:x.lower()) if not x == "Cogless"]
-			if "Cogless" in ext_dict: ext_list.append("Cogless") # Make sure this comes last
+			ext_list = [x for x in sorted(list(ext_dict), key=lambda x: x.lower()) if not x == "Cogless"]
+			if "Cogless" in ext_dict: ext_list.append("Cogless")  # Make sure this comes last
 			for ext_name in ext_list:
 				fields.append({
-					"name":ext_name,
-					"value":"\n".join(["`└─ {}`".format(x) for x in ext_dict[ext_name]]),
-					"inline":True
+					"name": ext_name,
+					"value": "\n".join(["`└─ {}`".format(x) for x in ext_dict[ext_name]]),
+					"inline": True
 				})
 		return await PickList.PagePicker(
 			title=title,
 			list=fields,
-			ctx=ctx,
+			ctx=interaction,
 			max=24
 		).pick()
-	
-	@commands.command(pass_context=True)
-	async def reload(self, ctx, *, extension = None):
-		"""Reloads the passed extension - or all if none passed."""
-		# Only allow owner
-		isOwner = self.settings.isOwner(ctx.author)
-		if isOwner is None:
-			msg = 'I have not been claimed, *yet*.'
-			await ctx.channel.send(msg)
-			return
-		elif isOwner == False:
-			msg = 'You are not the *true* owner of me.  Only the rightful owner can use this command.'
-			await ctx.channel.send(msg)
-			return
+
+	# Imports Slash Command
+	@app_commands.command(name="imports", description="Outputs the extensions imported by the passed extension.")
+	@app_commands.describe(extension="fill this in later")
+	@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+	@app_commands.user_install()
+	async def imports(self, interaction: discord.Interaction, extension: str | None = None):
+		"""Outputs the extensions imported by the passed extension."""
+
+		# Avoids "interaction did not respond" and also avoids a NoneType.to_dict() error
+		await interaction.response.defer(thinking=True)
 
 		if extension is None:
-			message = await ctx.send("Reloading all extensions...")
-			result = self._load_extension()
-			res_str = "*{}* of *{}* extensions reloaded successfully!".format(result[0], result[1])
-			await message.edit(content=res_str)
-			return
+			# run check_extension
+			return await self.check_extension(interaction, extension)
+		for ext in os.listdir("Cogs"):
+			# Avoid reloading Settings and Mute
+			if not ext.lower().endswith(".py"):
+				continue
+			if ext[:-3].lower() == extension.lower():
+				# Found it
+				import_list = self._get_imports(ext)
+				if not len(import_list):
+					await interaction.followup.send("That extension has no local extensions imported.")
+				else:
+					await interaction.followup.send("Imports:\n\n{}".format(", ".join(import_list)))
+				return
+		await interaction.followup.send("I couldn't find that extension...")
 
-		message = await ctx.send("Reloading extensions related to `{}`...".format(extension.replace("`","").replace("\\","")))
-		result = self._load_extension(extension)
-		
-		if result[1] == 0:
-			await message.edit(content="I couldn't find that extension.")
-		else:
-			e_string = "extension" if result[1] == 1 else "extensions"
-			await message.edit(content="{}/{} connected {} reloaded!".format(result[0], result[1], e_string))
-				
-	@commands.command(pass_context=True)
-	async def update(self, ctx, reset=None):
-		"""Updates from git, pass "reset" or "-reset" to this command to first run "git reset --hard" (owner only)."""
-		isOwner = self.settings.isOwner(ctx.author)
-		if isOwner is None: return await ctx.send("I have not been claimed, *yet*.")
-		elif isOwner == False: return await ctx.send("You are not the *true* owner of me.  Only the rightful owner can use this command.")
-		
-		# Let's find out if we *have* git first
-		command = "where" if os.name == "nt" else "which"
-		try:
-			p = subprocess.run(command + " git", shell=True, check=True, stderr=subprocess.DEVNULL, stdout=subprocess.PIPE)
-			git_location = p.stdout.decode("utf-8").split("\n")[0].split("\r")[0]
-		except:
-			git_location = None
-			
-		if not git_location: return await ctx.send("It looks like my host environment doesn't have git in its path var :(")
+	# Extensions Slash Command
+	@app_commands.command(name="extensions", description="Outputs the cogs and command count")
+	@app_commands.describe(extension="fill this in later")
+	@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+	@app_commands.user_install()
+	async def extensions(self, interaction: discord.Interaction, extension: str | None = None):
+		"""Outputs the cogs and command count for the passed extension - or all extensions and their corresponding cogs if none passed."""
 
-		# Check if we first reset
-		message = None
-		reset = reset is not None and "reset" in reset.lower()
-		if reset:
-			message = await Message.EmbedText(title="Resetting...", description="```\ngit reset --hard\n```", color=ctx.author).send(ctx)
-			try:
-				u = subprocess.Popen([git_location, "reset", "--hard"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-				out, err = u.communicate()
-			except:
-				return await Message.EmbedText(title="Something went wrong!", description="Make sure you have `git` in your PATH var.", color=ctx.author).edit(ctx, message)
-		# Try to update
-		args = {"title":"Updating...","description":"```\ngit pull\n```","color":ctx.author}
-		message = await Message.EmbedText(**args).edit(ctx, message) if message else await Message.EmbedText(**args).send(ctx)
-		try:
-			u = subprocess.Popen([git_location, 'pull'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-			out, err = u.communicate()
-			msg = "```\n"
-			if len(out.decode("utf-8")):
-				msg += out.decode("utf-8").replace("`", "\\`") + "\n"
-			if len(err.decode("utf-8")):
-				msg += err.decode("utf-8").replace("`", "\\`") + "\n"
-			msg += "```"
-			await Message.EmbedText(title="{}Update Results:".format("Reset and " if reset else ""), description=msg, color=ctx.author).edit(ctx, message)
-		except:
-			await Message.EmbedText(title="Something went wrong!", description="Make sure you have `git` in your PATH var.", color=ctx.author).edit(ctx, message)
+		# Avoids "interaction did not respond" and also avoids a NoneType.to_dict() error
+		await interaction.response.defer(thinking=True)
+
+		# Run check_extension - (function that was previously part of this command but now not. Notes on why this is I made in OpenCore for ALC. Same reasoning behind this.)
+		return await self.check_extension(interaction, extension)
+
+	
+

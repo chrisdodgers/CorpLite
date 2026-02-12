@@ -1,521 +1,196 @@
-import asyncio, discord, time, sys, os, random, traceback, json
-from   discord.ext import commands
-from   discord import errors
-from   Cogs import DisplayName
+import asyncio, discord, time, os, json
+from discord import app_commands, errors
+from discord.ext import commands
+
+build_version = "v0.3.0"
+# Fixed (in PickList) an issue with attaching the Pager view when only 1 page is present. Now only attaches when more than one page is present.
+# Fixed (in PickList) with PickButtons view where the view would not clear once a selection was made.
+# Added/updated Comic Cog
+# Added /slide to OpenCore cog
+# Cleaned up a bit for initial fork and commit.
+# Renamed from CorpLite.py to Main.py and updated references.
+
+# Previous v0.2.1 Notes:
+# Moved the actual app_commands back into their cogs where they belong.
+# Using CogManager and Shards now:
+# Cogs/Cog Manager for setup and load extensions and unload is now working (if setup defs are not async/awaited with using discord.py instead of pycord - cog will fail to load.)
+# Temporarily removed reliance of settings, utils, and mute. Will revisit this.
+
+"""To do: Add a few more cogs including reworking Utils and DisplayName and revisiting preloads in CogManager..."""
+# Would be cool to figure out how to integrate Settings and Utils and fix it up for being solely a user app.
+# Do not plan on adding *too many* cogs as well... that isn't the point of this fork hence the name. Possibly will create an Extras folder and you can chose additional updated cogs to move into Cogs.
+# Use CorpBot if you require things well out of the scope of this fork.
+# Full credit to @CorpNewt (https://github.com/corpnewt) for creating CorpBot which most of the code here *is* CorpBot. Thanks for making CorpBot and the other amazing tools we use and love.
+# Forked from: https://github.com/corpnewt/CorpBot.py
 
 # Let's migrate any specific txt settings files into a single json file
 # called settings_dict.json
 if os.path.exists("settings_dict.json"):
-	try: settings_dict = json.load(open("settings_dict.json"))
-	except Exception as e:
-		print("Could not load settings_dict.json!")
-		print(" - {}".format(e))
-		# Kill the process to avoid constant reloads
-		os._exit(3)
+    try:
+        settings_dict = json.load(open("settings_dict.json"))
+    except Exception as e:
+        print("Could not load settings_dict.json!")
+        print(" - {}".format(e))
+        # Kill the process to avoid constant reloads
+        os._exit(3)
 else:
-	settings_dict = {"token":""}
-	print("Migrating .txt files to settings_dict.json...")
-	for x in ["prefix.txt","corpSiteAuth.txt","token.txt","igdbKey.txt","weather.txt","discogs.txt","currency.txt"]:
-		if not os.path.exists(x): continue # Didn't find it
-		try:
-			with open(x,"rb") as f:
-				setting = f.read().strip().decode("utf-8")
-		except Exception as e:
-			print("Failed to migrate setting from {}! Ignoring.".format(x))
-			print(" - {}".format(e))
-			continue
-		settings_dict[x[:-4].lower()] = setting
-	json.dump(settings_dict,open("settings_dict.json","w"),indent=4)
+    settings_dict = {"token": ""}
+    print("Migrating .txt files to settings_dict.json...")
+    for x in ["prefix.txt", "corpSiteAuth.txt", "token.txt", "igdbKey.txt", "weather.txt", "discogs.txt",
+              "currency.txt"]:
+        if not os.path.exists(x): continue  # Didn't find it
+        try:
+            with open(x, "rb") as f:
+                setting = f.read().strip().decode("utf-8")
+        except Exception as e:
+            print("Failed to migrate setting from {}! Ignoring.".format(x))
+            print(" - {}".format(e))
+            continue
+        settings_dict[x[:-4].lower()] = setting
+    json.dump(settings_dict, open("settings_dict.json", "w"), indent=4)
 
-async def get_prefix(bot, message):
-	# Check commands against some things and do stuff or whatever...
-	prefixes = ["<@!{}> ".format(bot.user.id), "<@{}> ".format(bot.user.id)]
-	try:
-		# Set the settings var up
-		settings = bot.get_cog("Settings")
-		serverPrefix = settings.getServerStat(message.guild,"Prefix")
-	except Exception:
-		serverPrefix = None
-	if not serverPrefix:
-		# No custom prefix - use the default
-		serverPrefix = settings_dict.get("prefix","$") # prefix
-	if isinstance(serverPrefix,(list,tuple)):
-		prefixes.extend(serverPrefix)
-	else:
-		prefixes.append(serverPrefix)
-	# Ensure all elements are strings
-	prefixes = [x for x in prefixes if isinstance(x,str)]
-	return tuple(prefixes)
-
-# This should be the main soul of the bot - everything should load from here
-# bot = commands.Bot(command_prefix=get_prefix, pm_help=None, description='A bot that does stuff.... probably')
-# Let's SHARD!
-allowed_mentions = discord.AllowedMentions(
-	users=False,
-	everyone=False,
-	roles=False,
-	replied_user=False
-)
+# Set intents and let's SHARD!
 try:
-	# Setup intents
-	intents = discord.Intents().all()
-	bot = commands.AutoShardedBot(
-		command_prefix=get_prefix,
-		pm_help=None,
-		description='A bot that does stuff.... probably',
-		shard_count=settings_dict.get("shard_count",4),
-		intents=intents,
-		allowed_mentions=allowed_mentions,
-		case_insensitive=settings_dict.get("case_insensitive",True)
-	)
+    # Setup intents
+    intents = discord.Intents.default()
+    # Will most likely remove these commented out privileged intents as it currently isn't in use. Leaving it for now if I do end up needing it in the future...
+    # intents.message_content = True
+    # intents.messages = True
+    # intents.guilds = True
+    bot = commands.AutoShardedBot(
+        command_prefix="", # Purposely not defining a prefix nor pulling a prefix from settings_dict. Not needed since CorpLite is intended to be used only as a user app with slash commands.
+        intents=intents,
+        shard_count=settings_dict.get("shard_count", 4)
+    )
 except:
-	# Possibly using the old gateway?
-	print("Using the old gateway - this may not be around forever...\n")
-	bot = commands.AutoShardedBot(
-		command_prefix=get_prefix,
-		pm_help=None,
-		description='A bot that does stuff.... probably',
-		shard_count=settings_dict.get("shard_count",4),
-		allowed_mentions=allowed_mentions,
-		case_insensitive=settings_dict.get("case_insensitive",True)
-	)
-bot.settings_dict    = settings_dict
-bot.ready_dispatched = False
-bot.ready_time       = None
-bot.local_client     = None
-bot.startup_time     = time.time()
+    print("Failed to intent and SHARD it up...")
 
-async def return_message():
-	# Set the settings var up
-	settings = bot.get_cog("Settings")
-	if not settings:
-		return
-	stat_check = "{}-ReturnChannel".format(bot.user.id)
-	return_channel = settings.getGlobalStat(stat_check,None)
-	if return_channel:
-		settings.delGlobalStat(stat_check)
-		message_to = bot.get_channel(return_channel)
-		if not message_to:
-			# No channel - try getting a user, possibly rebooted in dm
-			message_to = bot.get_user(return_channel)
-			if not message_to:
-				return
-		return_options = [
-			"I'm back!",
-			"I have returned!",
-			"Guess who's back?",
-			"Fear not!  I have returned!",
-			"I'm alive!"
-		]
-		await message_to.send(random.choice(return_options))
+bot.settings_dict = settings_dict
+bot.ready_dispatched = False
+bot.ready_time = None
+bot.local_client = None
+bot.startup_time = time.time()
+
 
 # Main bot events
 @bot.event
 async def on_ready():
-	# Special workaround for the bot saying it's ready before all shards are ready.
-	# The bot seems to dispatch the ready event every 2 shards or so.
-	if not bot.ready_dispatched:
-		print(" - {} of {} ready...".format(len(bot.shards), bot.shard_count))
-		if len(bot.shards) >= bot.shard_count:
-			print("\nAll shards ready!\n")
-			bot.ready_dispatched = True
-			bot.ready_time = time.time()
-			bot.dispatch("all_shards_ready")
+    # Special workaround for the bot saying it's ready before all shards are ready.
+    # The bot seems to dispatch the ready event every 2 shards or so.
+    if not bot.ready_dispatched:
+        print(" - {} of {} ready...".format(len(bot.shards), bot.shard_count))
+        if len(bot.shards) >= bot.shard_count:
+            print("\nAll shards ready!\n")
+            bot.ready_dispatched = True
+            bot.ready_time = time.time()
+            bot.dispatch("all_shards_ready")
+
 
 @bot.event
 async def on_all_shards_ready():
-	if not bot.get_cog("CogManager"):
-		# We need to load shiz!
-		print('Logged in as:\n{0} (ID: {0.id})\n'.format(bot.user))
-		print("Invite Link:\nhttps://discordapp.com/oauth2/authorize?client_id={}&scope=bot&permissions=8\n".format(bot.user.id))
-		# Let's try to use the CogManager class to load things
-		print("Loading CogManager...")
-		bot.load_extension("Cogs.CogManager")
-		cg_man = bot.get_cog("CogManager")
-		# Load up the rest of the extensions
-		cog_loaded, cog_count = cg_man._load_extension()
-		# Output the load counts
-		if cog_count == 1:
-			print("Loaded {} of {} cog.".format(cog_loaded, cog_count))
-		else:
-			print("Loaded {} of {} cogs.".format(cog_loaded, cog_count))
-	await return_message()
-	if bot.settings_dict.get("local_server_enabled"):
-		# Start the local listening server/client
-		try:
-			import LocalServer
-			asyncio.create_task(LocalServer.start_server(bot))
-		except ImportError:
-			pass
+    if not bot.get_cog("CogManager"):
+        # We need to load shiz!
+        print('Logged in as:\n{0} (ID: {0.id})\n'.format(bot.user))
+        print("Invite Link:\nhttps://discordapp.com/oauth2/authorize?client_id={}&scope=bot&permissions=8\n".format(
+            bot.user.id))
+        # Let's try to use the CogManager class to load things
+        print("Loading CogManager...")
+        await bot.load_extension(
+            "Cogs.CogManager")  # added awaiting since using discord.py instead of pycord - it wants this to be async or will throw an error.
+        cg_man = bot.get_cog("CogManager")
+        # Load up the rest of the extensions
+        cog_loaded, cog_count = await cg_man._load_extension()  # once again like my note above
+        # Output the load counts
 
-'''@bot.event
-async def on_command_error(context, exception):
-	if type(exception) is commands.CommandInvokeError:
-		print("Command invoke error")
-		print(exception.original)
-		print(type(exception.original))
-		if type(exception.original) is discord.Forbidden:
-			print("Can't do that yo")
-			return
-	cog = context.cog
-	if cog:
-		attr = '_{0.__class__.__name__}__error'.format(cog)
-		if hasattr(cog, attr):
-			return
+        if cog_count == 1:
+            print("Loaded {} of {} cog.".format(cog_loaded, cog_count))
+        else:
+            print("Loaded {} of {} cogs.".format(cog_loaded, cog_count))
+        print("CorpLite is ready for action!")
+    await bot.tree.sync()
+    print("Synchronizing Slash Commands...")
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Rush"))
+    print("We're listen to Rush!")
 
-	print('Ignoring exception in command {}:'.format(context.command), file=sys.stderr)
-	traceback.print_exception(type(exception), exception, exception.__traceback__, file=sys.stderr)'''
+# Utility function to split long messages into chunks - Probably will remove this once I integrate the Help cog instead of the help command below.
+def split_message(message, limit=2000):
+    words = message.split(' ')  # Split the message into words
+    chunks = []
+    current_chunk = ""
 
-'''@bot.event
-async def on_error(event_method, *args, **kwargs):
-	exc_str = "Ignoring exception in {}:\n    ".format(event_method)
-	exc_str += "{}: {}".format(sys.exc_info()[0].__name__, sys.exc_info()[1])
-	#print('Ignoring exception in {}'.format(event_method), file=sys.stderr)
-	#traceback.print_exc()
-	print(exc_str)'''
-	
-@bot.event
-async def on_voice_state_update(user, beforeState, afterState):
-	return
+    for word in words:
+        if len(current_chunk) + len(word) + 1 > limit:  # Check if adding the word exceeds the limit
+            chunks.append(current_chunk.strip())  # Add the current chunk to chunks
+            current_chunk = ""  # Reset the current chunk
+        current_chunk += word + ' '  # Add the word to the current chunk
 
-@bot.event
-async def on_typing(channel, user, when):
-	for cog in bot.cogs:
-		cog = bot.get_cog(cog)
-		try:
-			await cog.ontyping(channel, user, when)
-		except AttributeError:
-			continue
+    if current_chunk.strip():  # Check if the last chunk is not empty
+        chunks.append(current_chunk.strip())  # Add the last chunk to chunks
 
-@bot.event
-async def on_member_remove(member):
-	server = member.guild
-	# Set the settings var up
-	settings = bot.get_cog("Settings")
-	settings.removeUser(member, server)
-	for cog in bot.cogs:
-		cog = bot.get_cog(cog)
-		try:
-			await cog.onleave(member, server)
-		except AttributeError:
-			# Onto the next
-			continue
+    return chunks
 
-@bot.event
-async def on_member_ban(guild, member):
-	for cog in bot.cogs:
-		cog = bot.get_cog(cog)
-		try:
-			await cog.onban(guild, member)
-		except AttributeError:
-			# Onto the next
-			continue
+# Help Slash Command (temp not using the help cog - will eventually re-work and add the help cog and remove this):
+@bot.tree.command(name="help", description="Learn how to use CorpLite")
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+@app_commands.user_install()
+async def help(ctx):
+    response = (
+        f"# How to use CorpLite:\n"
+        f"\n"
+        f"- Use __**/iark**__ to search an Intel CPU model (e.g. `i7-10700K`) to get CPU/iGPU info.\n"
+        f"- Use __**/weg**__ to search WhateverGreen's IntelHD FAQ for device-id and connector info. Use the optional `search_term` to search using a big/little endian device-id, AAPL,ig-platform-id, or AAPL,snb-platform-id.\n"
+        f"- Use __**/alc**__ to search a codec name or device-id to get layouts for AppleALC.\n"
+        f"- Use __**/listcodec**__ to list all codecs available *(or optionally search for one)*.\n"
+        f"- Use __**/occ**__ to search OC Configuration.tex. You can search a path (e.g. Kernel Quirks DisableIoMapper) or can search for a specific item (e.g. SecureBootModel).\n"
+        f"- Use __**/plist**__ to upload a config.plist to validate its plist structure.\n"
+        f"- Use __**/slide**__ to upload a memmap.txt dump to calculate a slide value.\n"
+        f"- Use __**/pci**__ to look up a PCI device using pci-ids.ucw.cz. Use `vvvv:dddd` where `vvvv` is the vendor id, and `dddd` is the device id (e.g. `8086:3E30`).\n"
+        f"- Use __**/usb**__ to look up a USB device using usb-ids.gowdy.us. Use `vvvv:dddd` where `vvvv` is the vendor id, and `dddd` is the device id (e.g. `8086:A36D`).\n"
+        f"- Use __**/encode**__ to convert data (hex, decimal, binary, base64, and ascii).\n"
+        f"- Use __**/hexswap**__ to byte swap a hex value.\n"
+        f"- Use __**/mem**__ to convert MiB to lhex (or vise-versa).\n"
+        f"- Use __**/weather**__ to get some weather.\n"
+        f"- Use __**/forecast**__ to get some weather, for 5 days or whatever.\n"
+        f"- Use __**/garfield**__ *(or /gmg, /peanuts, /dilbert)* for getting some comics! Optionally, can specify a date (e.g. 02-11-2026).\n"
+        f"- Use __**/randgarfield**__ *(or /randgmg, /randpeanuts, /randilbert)* for getting some comics (using a random date)!\n"
+        f"- Use __**/extensions**__ to view what cogs are running.\n"
+        f"\n"
+        f"## About CorpLite:\n"
+        f"\n"
+        f"This is test concept of a light version of CorpBot - hence the name CorpLite. \n"
+        f"CorpLite is designed to run solely as a user app using slash commands. A few key cogs have been added, and possibly a few more will be added at a later time. \n"
+        f"Since CorpLite is built to be solely used as a user app - it can be used in DMs and servers that allow the use of external apps. \n"
+        f"---------------------------------------\n"
+        f"`Full credit to @corpnewt for creating CorpBot https://github.com/corpnewt/CorpBot.py and for creating many of the tools we use and love.` \n"
+        f"`Current running build of CorpLite: {build_version} - @chris_dodgers`\n"
 
-@bot.event
-async def on_member_unban(member, server):
-	for cog in bot.cogs:
-		cog = bot.get_cog(cog)
-		try:
-			await cog.onunban(member, server)
-		except AttributeError:
-			# Onto the next
-			continue
-
-@bot.event
-async def on_guild_join(server):
-	didLeave = False
-	for cog in bot.cogs:
-		cog = bot.get_cog(cog)
-		try:
-			if await cog.onserverjoin(server):
-				didLeave = True
-		except AttributeError:
-			# Onto the next
-			continue
-	if didLeave:
-		return
-	# Set the settings var up
-	settings = bot.get_cog("Settings")
-	owner = server.owner
-	# Let's message hello in the main chat - then pm the owner
-	prefixes = await get_prefix(bot,None)
-	prefix = prefixes[0] if len(prefixes) else "$"
-	msg = 'Hello there! Thanks for having me on your server! ({})\n\nFeel free to put me to work.\n\nYou can get a list of my commands by typing `{}help` either in chat or in PM.\n\n'.format(server.name, prefix)
-	msg += 'Whenever you have a chance, maybe take the time to set me up by typing `{}setup` in the main chat.  Thanks!'.format(settings_dict.get("prefix","$"))
-	try:
-		await owner.send(msg)
-	except Exception:
-		pass
-
-@bot.event
-async def on_guild_remove(server):
-	# Set the settings var up
-	settings = bot.get_cog("Settings")
-	settings.removeServer(server)
-
-@bot.event
-async def on_member_join(member):
-	server = member.guild
-	# Set the settings var up
-	settings = bot.get_cog("Settings")
-
-	rules = settings.getServerStat(server, "Rules")
-	
-	for cog in bot.cogs:
-		cog = bot.get_cog(cog)
-		try:
-			await cog.onjoin(member, server)
-		except AttributeError:
-			# Onto the next
-			continue
-
-@bot.event
-async def on_presence_update(before, after):
-	# Workaround to keep all member/presence updates in the on_member_update() check
-	await on_member_update(before,after)
-
-@bot.event
-async def on_member_update(before, after):	
-	# Check for cogs that accept updates
-	for cog in bot.cogs:
-		cog = bot.get_cog(cog)
-		try:
-			await cog.member_update(before, after)
-		except AttributeError:
-			# Onto the next
-			continue
-
-@bot.event
-async def on_message(message):
-	# Post the context too
-	context = await bot.get_context(message)
-	bot.dispatch("message_context", context, message)
-
-	if not message.guild:
-		# This wasn't said in a server, process commands, then return
-		await bot.process_commands(message)
-		return
-
-	if message.author.bot:
-		# We don't need other bots controlling things we do.
-		return
-
-	try:
-		message.author.roles
-	except AttributeError:
-		# Not a User
-		await bot.process_commands(message)
-		return
-	
-	# Check if we need to ignore or delete the message
-	# or respond or replace
-	ignore = delete = react = respond = False
-	for cog in bot.cogs:
-		cog = bot.get_cog(cog)
-		try:
-			check = await cog.message(message)
-		except AttributeError:
-			# Onto the next
-			continue
-		# Make sure we have things formatted right
-		if not type(check) is dict:
-			check = {}
-		if check.get("Delete",False):
-			delete = True
-		if check.get("Ignore",False):
-			ignore = True
-		try: respond = check['Respond']
-		except KeyError: pass
-		try: react = check['Reaction']
-		except KeyError: pass
-
-	if delete:
-		# We need to delete the message - top priority
-		await message.delete()
-
-	if not ignore:
-		# We're processing commands here
-		if respond:
-			# We have something to say
-			await message.channel.send(respond)
-		if react:
-			# We have something to react with
-			for r in react:
-				await message.add_reaction(r)
-		await bot.process_commands(message)
-
-@bot.event
-async def on_command(command):
-	for cog in bot.cogs:
-		cog = bot.get_cog(cog)
-		try:
-			await cog.oncommand(command)
-		except AttributeError:
-			# Onto the next
-			continue
-
-@bot.event
-async def on_command_completion(command):
-	for cog in bot.cogs:
-		cog = bot.get_cog(cog)
-		try:
-			await cog.oncommandcompletion(command)
-		except AttributeError:
-			# Onto the next
-			continue
-
-'''@bot.event
-async def on_command_error(ctx, error):
-	# if isinstance(error, (commands.MissingRequiredArgument, commands.BadArgument)):
-	if not isinstance(error, (commands.CommandNotFound)):
-		await ctx.send("{}: {}".format(type(error).__name__, error))
-		formatted_help = await bot.formatter.format_help_for(ctx, ctx.command)
-		for page in formatted_help:
-			await ctx.send(page)
-	#print("".join(traceback.format_exception(etype=type(error),value=error,tb=error.__traceback__)))
-	if traceback.print_tb(error.__traceback__):
-		print(traceback.print_tb(error.__traceback__))'''
-
-@bot.event
-async def on_message_delete(message):
-	# Run through the on_message commands, but on deletes.
-	if not message.guild:
-		# This wasn't in a server, return
-		return
-	try:
-		message.author.roles
-	except AttributeError:
-		# Not a User
-		return
-	for cog in bot.cogs:
-		cog = bot.get_cog(cog)
-		try:
-			await cog.message_delete(message)
-		except AttributeError:
-			# Onto the next
-			continue
-
-		
-@bot.event
-async def on_message_edit(before, message):
-	# Run through the on_message commands, but on edits.
-	if not message.guild:
-		# This wasn't said in a server, return
-		return
-
-	try:
-		message.author.roles
-	except AttributeError:
-		# Not a User
-		return
-	
-	# Check if we need to ignore or delete the message
-	# or respond or replace
-	ignore = delete = False
-	respond = None
-	for cog in bot.cogs:
-		cog = bot.get_cog(cog)
-		try:
-			check = await cog.message_edit(before, message)
-		except AttributeError:
-			# Onto the next
-			continue
-		if check.get("Delete",False):
-			delete = True
-		if check.get("Ignore",False):
-			ignore = True
-		try: respond = check['Respond']
-		except KeyError: pass
-
-	if respond:
-		# We have something to say
-		await message.channel.send(respond)
-	if delete:
-		# We need to delete the message - top priority
-		await message.delete()
-
-async def watchinput():
-	# Get our input asynchronously
-	while True:
-		i = (await asyncio.get_running_loop().run_in_executor(None, sys.stdin.readline)).rstrip("\n")
-		if i.lower() in ("?","-h","--help","/h","/help","help","/?"):
-			print(" - Console commands:")
-			print("   - 'help': show this help message")
-			print("   - 'shutdown', 'exit', or 'quit': shut down and exit the bot (returns 3)")
-			print("   - 'reboot' or 'restart': reboot the bot (returns 2)")
-			print("   - 'install': reboot the bot and install dependencies (returns 4)")
-			print("   - 'update': reboot the bot and update dependencies (returns 5)")
-			print("   - 'latency': reports the bot's current latency")
-			print("   - 'reconnect': attempt to reconnect to discord")
-		elif i.lower() in ("shutdown","exit","quit","reboot","restart","install","update"):
-			try:
-				task_list = asyncio.Task.all_tasks()
-			except AttributeError:
-				task_list = asyncio.all_tasks()
-			for task in task_list:
-				try: task.cancel()
-				except: continue
-			try:
-				await bot.close()
-				bot.loop.stop()
-				bot.loop.close()
-			except:
-				pass
-			# Try to flush settings first
-			settings = bot.get_cog("Settings")
-			if settings:
-				print("Flushing settings...")
-				if os.path.isfile(os.path.join("Cogs","PandorasDB.py")):
-					# Flush the redis branch
-					settings.flushSettings()
-				else:
-					# Flush the rewrite branch to file
-					settings.flushSettings(settings.file)
-			# Kill this process
-			returncode = 2
-			if i.lower() in ("shutdown","exit","quit"):
-				returncode = 3
-			elif i.lower() == "install":
-				returncode = 4
-			elif i.lower() == "update":
-				returncode = 5
-			os._exit(returncode) 
-		elif i.lower().split()[0] == "reconnect":
-			# TODO: Allow reloading specific shard ids
-			print("Attempting to reconnect all shards...")
-			for s in bot.shards:
-				print(" - Shard ID: {}...".format(s))
-				shard = bot.get_shard(s)
-				if shard is None:
-					print(" --> Shard ID not located - skipping...")
-					continue
-				print(" --> Reconnecting...")
-				await shard.reconnect()
-			print("Done reconnecting shards.")
-		elif i.lower() == "latency":
-			print("Current gateway latency: {}".format(
-				"infininte" if bot.latency == float("inf") else "{:,}ms".format(round(bot.latency*1000))
-			))
+    )
+    # Split response into multiple messages since it exceeds the 2000 char limit
+    chunks = split_message(response)
+    await ctx.response.send_message(content=chunks[0], ephemeral=True)
+    # Send follow-up messages if there are more chunks
+    for chunk in chunks[1:]:
+        if chunk.strip():  # Check if the chunk is not empty
+            await ctx.followup.send(content=chunk[:2000], ephemeral=True)
 
 # Run the bot
-print("Starting up {} shard{}...".format(bot.shard_count,"" if bot.shard_count == 1 else "s"))
-bot.loop.create_task(watchinput())
 try:
-	bot.run(settings_dict.get("token",""))
+    print("Starting up {} shard{}...".format(bot.shard_count, "" if bot.shard_count == 1 else "s"))
+    bot.run(settings_dict.get("token", ""))
 except errors.LoginFailure as e:
-	print("\nSomething went wrong logging in: {}\n".format(e))
-	if "token" in str(e).lower():
-		print("You can create/reset your token in the Developer Portal:\n")
-		print("1. Go to https://discord.com/developers/applications")
-		print("2. Select your bot under 'My Applications' or click 'New Application' to")
-		print("   create a new bot")
-		print("3. Click 'Bot' in the menu on the left side of the page")
-		print("4. Click 'Reset Token'")
-		print("   - DO NOT SHARE THIS TOKEN WITH ANYONE")
-		print("   - YOU CAN ONLY VIEW IT ONCE")
-		print("5. Copy the token to the clipboard")
-		print("")
-		os._exit(6)
-	os._exit(3)
+    print("\nSomething went wrong logging in: {}\n".format(e))
+    if "token" in str(e).lower():
+        print("You can create/reset your token in the Developer Portal:\n")
+        print("1. Go to https://discord.com/developers/applications")
+        print("2. Select your bot under 'My Applications' or click 'New Application' to")
+        print("   create a new bot")
+        print("3. Click 'Bot' in the menu on the left side of the page")
+        print("4. Click 'Reset Token'")
+        print("   - DO NOT SHARE THIS TOKEN WITH ANYONE")
+        print("   - YOU CAN ONLY VIEW IT ONCE")
+        print("5. Copy the token to the clipboard")
+        print("")
+        os._exit(6)
+    os._exit(3)
 except RuntimeError as e:
-	print("Dirty shutdown - runtime error minimized:\n - {}".format(e))
+    print("Dirty shutdown - runtime error minimized:\n - {}".format(e))

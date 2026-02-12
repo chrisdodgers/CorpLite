@@ -1,11 +1,12 @@
 import discord, asyncio, gzip, time, datetime, os, re
+from discord import app_commands
 from   discord.ext import commands
 from   Cogs import DL
 from   Cogs import Message
 
-def setup(bot):
+async def setup(bot):
 	# Add the bot
-	bot.add_cog(PciUsb(bot))
+	await bot.add_cog(PciUsb(bot))
 
 class PciUsb(commands.Cog):
 
@@ -200,18 +201,26 @@ class PciUsb(commands.Cog):
 		# Return results accordingly
 		return (vendor, device)
 
-	@commands.command(pass_context=True)
-	async def pci(self, ctx, *, ven_dev = None):
+	# PCI Slash Command:
+	@app_commands.command(name="pci", description="Searches pci-ids.ucw.cz for the passed PCI ven:dev id.")
+	@app_commands.describe(ven_dev="Use `vvvv:dddd` where `vvvv` is the vendor id, and `dddd` is the device id. (e.g. 8086:3E30)")
+	@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+	@app_commands.user_install()
+	async def pci(self, interaction: discord.Interaction, ven_dev: str):
 		"""Searches pci-ids.ucw.cz for the passed PCI ven:dev id."""
-		usage = "Usage: `{}pci vvvv:dddd` where `vvvv` is the vendor id, and `dddd` is the device id.".format(ctx.prefix)
+
+		# Avoids "interaction did not respond" and also avoids a NoneType.to_dict() error
+		await interaction.response.defer(thinking=True)
+
+		usage = "Usage: `/pci vvvv:dddd` where `vvvv` is the vendor id, and `dddd` is the device id."
 		if not ven_dev:
-			return await ctx.send(usage)
+			return await interaction.followup.send(usage)
 		ven_dev_check = self._get_ven_dev(ven_dev)
 		if ven_dev_check is None:
-			return await ctx.send(usage)
-		info_check = self._get_info(ven_dev_check[0],ven_dev_check[1],self.pci_ids)
+			return await interaction.followup.send(usage)
+		info_check = self._get_info(ven_dev_check[0], ven_dev_check[1], self.pci_ids)
 		if info_check is None:
-			return await ctx.send("Something went wrong :(")
+			return await interaction.followup.send("Something went wrong :(")
 		result = "`{}`\n\n{}".format(
 			ven_dev_check[2],
 			info_check[1]
@@ -221,21 +230,29 @@ class PciUsb(commands.Cog):
 			title="{} PCI Device Results".format(info_check[0]),
 			description=result,
 			footer="Powered by http://pci-ids.ucw.cz",
-			color=ctx.author
-		).send(ctx)
-		
-	@commands.command(pass_context=True)
-	async def usb(self, ctx, *, ven_dev = None):
+			color=interaction.user
+		).send(interaction)
+
+	# USB Slash Command:
+	@app_commands.command(name="usb", description="Searches usb-ids.gowdy.us for the passed USB ven:dev id.")
+	@app_commands.describe(ven_dev="Use `vvvv:dddd` where `vvvv` is the vendor id, and `dddd` is the device id. (e.g. 8086:A36D)")
+	@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+	@app_commands.user_install()
+	async def usb(self, interaction: discord.Interaction, ven_dev: str):
 		"""Searches usb-ids.gowdy.us for the passed USB ven:dev id."""
-		usage = "Usage: `{}usb vvvv:dddd` where `vvvv` is the vendor id, and `dddd` is the device id.".format(ctx.prefix)
+
+		# Avoids "interaction did not respond" and also avoids a NoneType.to_dict() error
+		await interaction.response.defer(thinking=True)
+
+		usage = "Usage: `/usb vvvv:dddd` where `vvvv` is the vendor id, and `dddd` is the device id."
 		if not ven_dev:
-			return await ctx.send(usage)
+			return await interaction.followup.send(usage)
 		ven_dev_check = self._get_ven_dev(ven_dev)
 		if ven_dev_check is None:
-			return await ctx.send(usage)
-		info_check = self._get_info(ven_dev_check[0],ven_dev_check[1],self.usb_ids)
+			return await interaction.followup.send(usage)
+		info_check = self._get_info(ven_dev_check[0], ven_dev_check[1], self.usb_ids)
 		if info_check is None:
-			return await ctx.send("Something went wrong :(")
+			return await interaction.followup.send("Something went wrong :(")
 		result = "`{}`\n\n{}".format(
 			ven_dev_check[2],
 			info_check[1]
@@ -245,5 +262,5 @@ class PciUsb(commands.Cog):
 			title="{} USB Device Results".format(info_check[0]),
 			description=result,
 			footer="Powered by http://usb-ids.gowdy.us",
-			color=ctx.author
-		).send(ctx)
+			color=interaction.user
+		).send(interaction)

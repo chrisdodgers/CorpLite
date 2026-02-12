@@ -1,19 +1,19 @@
 import asyncio, discord, base64, binascii, re, os, random
+from discord import app_commands
 from   discord.ext import commands
-from   Cogs import Utils, DL, Message, Nullify, DisplayName
+from   Cogs import DL, Message, Nullify
 from   PIL import Image
 
-def setup(bot):
+async def setup(bot):
 	# Add the bot and deps
-	settings = bot.get_cog("Settings")
-	bot.add_cog(Encode(bot, settings))
+	# Removed settings
+	await bot.add_cog(Encode(bot))
 
 class Encode(commands.Cog):
 
 	# Init with the bot reference
-	def __init__(self, bot, settings):
+	def __init__(self, bot):
 		self.bot = bot
-		self.settings = settings
 		self.types = (
 			# Decimal types
 			"decimal",
@@ -85,8 +85,8 @@ class Encode(commands.Cog):
 			"(h)ex/bhex/lhex",
 			"(lb)it/(bb)it"
 		)
-		global Utils, DisplayName
-		Utils = self.bot.get_cog("Utils")
+		global DisplayName
+		# Removed Utils
 		DisplayName = self.bot.get_cog("DisplayName")
 
 	# Helper methods
@@ -291,242 +291,137 @@ class Encode(commands.Cog):
 	def _hex_int_to_tuple(self, _hex):
 		return (_hex >> 16 & 0xFF, _hex >> 8 & 0xFF, _hex & 0xFF)
 
-	@commands.command()
-	async def color(self, ctx, *, value = None):
-		"""
-		View info on a rgb, hex or cmyk color and their
-		values in other formats
 
-		Example usage:
-		color #3399cc
-		color rgb(3, 4, 5)
-		color cmyk(1, 2, 3, 4)
-		color 0xFF00FF
-		"""
-		if not value: return await ctx.send("Usage: `{}color [value]`".format(ctx.prefix))
-		# Let's replace commas, and parethesis with spaces, then split on whitespace
-		values = value.replace(","," ").replace("("," ").replace(")"," ").replace("%"," ").split()
-		color_values  = []
-		for x in values:
-			if x.lower().startswith(("0x","#")) or any((y in x.lower() for y in "abcdef")):
-				# We likely have a hex value
-				try: color_values.append(int(x.lower().replace("#","").replace("0x",""),16))
-				except: pass # Bad value - ignore
-			else:
-				# Try to convert it to an int
-				try: color_values.append(int(x))
-				except: pass # Bad value - ignore
-		original_type = {
-			1:"hex",
-			3:"rgb",
-			4:"cmyk"
-		}.get(len(color_values),None)
-		if original_type is None:
-			# Try to get a member
-			member = DisplayName.memberForName(value,ctx.guild)
-			if member is None:
-				return await ctx.send("Incorrect number of color values!  Hex takes 1, RGB takes 3, CMYK takes 4.")
-			# We got a member - extract the color
-			original_type = "hex"
-			color_values = [member.color.value]
-		# Verify values
-		max_val = {
-			"hex":0xFFFFFF,
-			"rgb":255
-		}.get(original_type,100)
-		if not all((0 <= x <= max_val for x in color_values)):
-			return await ctx.send("Value out of range!  Valid ranges are from `#000000` to `#FFFFFF` for Hex, `0` to `255` for RGB, and `0` to `100` for CMYK.")
-		# Organize the data into the Message format expectations
-		if original_type == "hex":
-			hex_value = "#"+hex(color_values[0]).replace("0x","").rjust(6,"0").upper()
-			title = "Color {}".format(hex_value)
-			color = color_values[0]
-			fields = [
-				{"name":"RGB","value":"rgb({}, {}, {})".format(*self._hex_to_rgb(hex_value))},
-				{"name":"CMYK","value":"cmyk({}, {}, {}, {})".format(*self._hex_to_cmyk(hex_value))}
-				]
-		elif original_type == "rgb":
-			title = "Color rgb({}, {}, {})".format(*color_values)
-			color = int(self._rgb_to_hex(*color_values).replace("#",""),16)
-			fields = [
-				{"name":"Hex","value":self._rgb_to_hex(*color_values)},
-				{"name":"CMYK","value":"cmyk({}, {}, {}, {})".format(*self._rgb_to_cmyk(*color_values))}
-			]
-		else:
-			title = "Color cmyk({}, {}, {}, {})".format(*color_values)
-			color = int(self._cmyk_to_hex(*color_values).replace("#",""),16)
-			fields = [
-				{"name":"Hex","value":self._cmyk_to_hex(*color_values)},
-				{"name":"RGB","value":"rgb({}, {}, {})".format(*self._cmyk_to_rgb(*color_values))}
-			]
-		# Create the image
-		file_path = "images/colornow.png"
-		try:
-			image = Image.new(mode="RGB",size=(512,256),color=self._hex_int_to_tuple(color))
-			image.save(file_path)
-			await Message.Embed(title=title,color=self._hex_int_to_tuple(color),fields=fields,file=file_path).send(ctx)
-		except:
-			pass
-		if os.path.exists(file_path):
-			os.remove(file_path)
 
-	@commands.command()
-	async def randomcolor(self, ctx):
-		"""Selects a random color."""
-		# Pick a random color
-		hex_value = "#{}".format("".join([random.choice("0123456789ABCDEF") for x in range(6)]))
-		title = "Color {}".format(hex_value)
-		color = int(hex_value.replace("#",""),16)
-		fields = [
-			{"name":"RGB","value":"rgb({}, {}, {})".format(*self._hex_to_rgb(hex_value))},
-			{"name":"CMYK","value":"cmyk({}, {}, {}, {})".format(*self._hex_to_cmyk(hex_value))}
-		]
-		# Create the image
-		file_path = "images/colornow.png"
+
+	# Grab and process types for use for autocomplete in /encode
+	# Maybe later sort alphabetically and add another types list since some are just aliases basically like lhex, hexl, lh for example.
+	async def encode_type_autocomplete(self, interaction: discord.Interaction, current: str):
+		types = self.types if self else []
+		results = [t for t in types if current.lower() in t.lower()]
+		return [app_commands.Choice(name=t, value=t) for t in results[:25]]
+
+	# Encode Slash Command:
+	@app_commands.command(name="encode", description="Data converter that supports hex, decimal, binary, base64, and ascii.")
+	@app_commands.describe(from_type="What you are converting from (e.g. `hex`):")
+	@app_commands.describe(to_type="What you are converting to (e.g. `lhex`):")
+	@app_commands.describe(value="The value you are wanting to convert (e.g. 0x3EA50000)")
+	@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+	@app_commands.user_install()
+	@app_commands.autocomplete(from_type=encode_type_autocomplete, to_type=encode_type_autocomplete)
+	async def encode(self, interaction: discord.Interaction, from_type: str, to_type: str, value: str):
+		"""Data converter that supports hex, decimal, binary, base64, and ascii."""
+
+		# Avoids "interaction did not respond" and also avoids a NoneType.to_dict() error
+		await interaction.response.defer(thinking=True)
+
+		usage = 'Usage: `/encode [from_type] [to_type] [value]`\nAvailable types include:\n- {}'
+
+		if from_type is None or to_type is None:
+			return await interaction.followup.send(usage)
+
+		# Find out if we're replying to another message
+		# Currently disabled since I haven't figured out how to update Utils functions yet...
+		reply = None
+		# if ctx.message.reference:
+		# Resolve the replied to reference to a message object
+		#    try:
+		#        message = await Utils.get_replied_to(ctx.message, ctx=interaction)
+		#        reply = await Utils.get_message_content(message)
+		#    except:
+		#        pass
+		if reply:  # Use the replied to message content instead
+			value = reply
+
+		if not value:
+			return await interaction.followup.send(usage)
+
+		for v, n in ((from_type, "from"), (to_type, "to")):
+			if not v.lower() in self.types and not v.lower().startswith(self.padded_prefixes):
+				return await interaction.followup.send(
+					"Invalid *{}* type!\nAvailable types include:\n- {}".format(n,
+																				"\n- ".join(self.display_types)))
+
+		if from_type.lower() == to_type.lower():
+			return await interaction.followup.send("*Poof!* Your encoding was done before it started!")
+
 		try:
-			image = Image.new(mode="RGB",size=(512,256),color=self._hex_int_to_tuple(color))
-			image.save(file_path)
-			await Message.Embed(title=title,color=self._hex_int_to_tuple(color),fields=fields,file=file_path).send(ctx)
-		except:
-			pass
-		if os.path.exists(file_path):
-			os.remove(file_path)
-	
-	@commands.command()
-	async def hexswap(self, ctx, *, input_hex = None):
+			return await interaction.followup.send(
+				Nullify.escape_all(self._convert_value(value, from_type, to_type)))
+		except Exception as e:
+			return await interaction.followup.send(Nullify.escape_all("I couldn't make that conversion:\n{}".format(e)))
+
+	# Hexswap Slash Command:
+	@app_commands.command(name="hexswap", description="Enter a hex value to byte swap.")
+	@app_commands.describe(input_hex="Enter a hex value (e.g. 0x3EA50000):")
+	@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+	@app_commands.user_install()
+	async def hexswap(self, interaction: discord.Interaction, input_hex: str):
 		"""Byte swaps the passed hex value."""
+
+		# Avoids "interaction did not respond" and also avoids a NoneType.to_dict() error
+		await interaction.response.defer(thinking=True)
+
 		if input_hex is None:
-			return await ctx.send("Usage: `{}hexswap [input_hex]`".format(ctx.prefix))
+			return await interaction.followup.send("Usage: `/hexswap [input_hex]`")
 		input_hex = self._check_hex(input_hex)
 		if not len(input_hex):
-			return await ctx.send("Malformed hex - try again.")
+			return await interaction.followup.send("Malformed hex - try again.")
 		# Normalize hex into pairs
-		input_hex = list("0"*(len(input_hex)%2)+input_hex)
+		input_hex = list("0" * (len(input_hex) % 2) + input_hex)
 		hex_pairs = [input_hex[i:i + 2] for i in range(0, len(input_hex), 2)]
 		hex_rev = hex_pairs[::-1]
 		hex_str = "".join(["".join(x) for x in hex_rev])
-		await ctx.send(hex_str.upper())
-		
-	@commands.command()
-	async def hexdec(self, ctx, *, input_hex = None):
-		"""Converts hex to decimal."""
-		if input_hex is None:
-			return await ctx.send("Usage: `{}hexdec [input_hex]`".format(ctx.prefix))
-		
-		input_hex = self._check_hex(input_hex)
-		if not len(input_hex):
-			return await ctx.send("Malformed hex - try again.")
-		
-		try:
-			dec = int(input_hex, 16)
-		except Exception:
-			return await ctx.send("I couldn't make that conversion!")
+		await interaction.followup.send(hex_str.upper())
 
-		await ctx.send(dec)
+	# Define and process types for use for autocomplete in /mem
+	async def mem_type_autocomplete(self, interaction: discord.Interaction, current: str):
+		types = ["MiB", "lhex"]
+		results = [t for t in types if current.lower() in t.lower()]
+		return [app_commands.Choice(name=t, value=t) for t in results[:25]]
 
-	@commands.command()
-	async def dechex(self, ctx, *, input_dec = None):
-		"""Converts an int to hex."""
-		if input_dec is None:
-			return await ctx.send("Usage: `{}dechex [input_dec]`".format(ctx.prefix))
+
+	# Mem Slash Command:
+	@app_commands.command(name="mem", description="Convert between MiB and little-endian hex.")
+	@app_commands.describe(from_type="Convert from (MiB or lhex):")
+	@app_commands.describe(to_type="Convert to (MiB or lhex):")
+	@app_commands.describe(value="The value you are wanting to convert (e.g. 26MiB or 0000A001)")
+	@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+	@app_commands.user_install()
+	@app_commands.autocomplete(from_type=mem_type_autocomplete, to_type=mem_type_autocomplete)
+	async def mem(self, interaction: discord.Interaction, from_type: str, to_type: str, value: str):
+		"""Converts between MiB and little-endian hexadecimal (lhex)."""
+
+		# Avoids "interaction did not respond" and also avoids a NoneType.to_dict() error
+		await interaction.response.defer(thinking=True)
 
 		try:
-			input_dec = int(input_dec)
-		except Exception:
-			return await ctx.send("Input must be an integer.")
-		min_length = 2
-		hex_str = "{:x}".format(input_dec).upper()
-		hex_str = "0"*(len(hex_str)%min_length)+hex_str
-		await ctx.send("0x"+hex_str)
+			from_type = from_type.lower()
+			to_type = to_type.lower()
+			val = value.strip()
 
+			# Convert MiB to lhex
+			if from_type == "mib" and to_type == "lhex":
+				# Store as a float, remove mib if present in the search
+				num = float(val.lower().replace("mib", "").strip())
+				# Convert to bytes
+				bytes_val = int(num * 1024 * 1024)
+				# Use _convert_value to handle decimal to lhex conversion
+				out = self._convert_value(str(bytes_val), "decimal", "lhex")
+				return await interaction.followup.send(Nullify.escape_all(out))
+                # Seacrest out!
 
-	@commands.command()
-	async def strbin(self, ctx, *, input_string = None):
-		"""Converts the input string to its binary representation."""
-		if input_string is None:
-			return await ctx.send("Usage: `{}strbin [input_string]`".format(ctx.prefix))
-		msg = ''.join('{:08b}'.format(ord(c)) for c in input_string)
-		# Format into blocks:
-		# - First split into chunks of 8
-		msg_list = re.findall('........?', msg)
-		# Now we format!
-		msg = "```\n"
-		msg += " ".join(msg_list)
-		msg += "```"	
-		if len(msg) > 1993:
-			return await ctx.send("Well... that was *a lot* of 1s and 0s.  Maybe try a smaller string... Discord won't let me send all that.")
-		await ctx.send(msg)
+			# Convert lhex to MiB
+			elif from_type == "lhex" and to_type == "mib":
+				# Convert from lhex to decimal
+				dec_val = self._convert_value(val, "lhex", "decimal")
+				# Convert to MiB
+				mib_val = round(int(dec_val) / (1024 * 1024), 4)
+				return await interaction.followup.send(f"{mib_val}MiB")
 
-	@commands.command()
-	async def binstr(self, ctx, *, input_binary = None):
-		"""Converts the input binary to its string representation."""
-		if input_binary is None:
-			return await ctx.send("Usage: `{}binstr [input_binary]`".format(ctx.prefix))
-		# Clean the string
-		new_bin = ""
-		for char in input_binary:
-			if char == "0" or char == "1":
-				new_bin += char
-		if not len(new_bin):
-			return await ctx.send("Usage: `{}binstr [input_binary]`".format(ctx.prefix))
-		msg = ''.join(chr(int(new_bin[i:i+8], 2)) for i in range(0, len(new_bin), 8))
-		await ctx.send(Nullify.escape_all(msg))
+			else:
+				return await interaction.followup.send("Invalid conversion. Use proper `MiB` or `lhex` values only.")
 
-	@commands.command()
-	async def binint(self, ctx, *, input_binary = None):
-		"""Converts the input binary to its integer representation."""
-		if input_binary is None:
-			return await ctx.send("Usage: `{}binint [input_binary]`".format(ctx.prefix))
-		try:
-			msg = int(input_binary, 2)
-		except Exception:
-			msg = "I couldn't make that conversion!"
-		await ctx.send(msg)
-
-	@commands.command()
-	async def intbin(self, ctx, *, input_int = None):
-		"""Converts the input integer to its binary representation."""
-		if input_int is None:
-			return await ctx.send("Usage: `{}intbin [input_int]`".format(ctx.prefix))
-		try:
-			input_int = int(input_int)
-		except Exception:
-			return await ctx.send("Input must be an integer.")
-
-		await ctx.send("{:08b}".format(input_int))
-	
-	@commands.command(aliases=["enc"])
-	async def encode(self, ctx, from_type = None, to_type = None, *, value = None):
-		"""Data converter that supports hex, decimal, binary, base64, and ascii."""
-
-		usage = 'Usage: `{}encode [from_type] [to_type] [value]`\nAvailable types include:\n- {}'.format(ctx.prefix,"\n- ".join(self.display_types))
-		if from_type is None or to_type is None:
-			return await ctx.send(usage)
-
-		if value is None:
-			# No value passed, see if we're replying to another message
-			reply = None
-			if ctx.message.reference:
-				# Resolve the replied to reference to a message object
-				try:
-					message = await Utils.get_replied_to(ctx.message,ctx=ctx)
-					reply = await Utils.get_message_content(message)
-				except:
-					pass
-			if reply: # Use the replied to message content instead
-				value = reply
-
-		if not value:
-			return await ctx.send(usage)
-
-		for v,n in ((from_type,"from"),(to_type,"to")):
-			if not v.lower() in self.types and not v.lower().startswith(self.padded_prefixes):
-				return await ctx.send("Invalid *{}* type!\nAvailable types include:\n- {}".format(n,"\n- ".join(self.display_types)))
-
-		if from_type.lower() == to_type.lower():
-			return await ctx.send("*Poof!* Your encoding was done before it started!")
-			
-		try:
-			return await ctx.send(Nullify.escape_all(self._convert_value(value,from_type,to_type)))
 		except Exception as e:
-			return await ctx.send(Nullify.escape_all("I couldn't make that conversion:\n{}".format(e)))
+			print(f"[mem] Exception occurred: {e}")
+			return await interaction.followup.send(Nullify.escape_all("I couldn't make that conversion:\n{}".format(e)))
