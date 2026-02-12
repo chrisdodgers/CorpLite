@@ -7,7 +7,7 @@ The idea behind this fork is I thought to myself, *"hmmm, wouldn't it be kind of
 - Currently, CorpLite has a *few* cogs that have been updated to use slash commands and Discord Interactions.
 - CorpLite works within private DMs, and also servers that allow the use of external apps. 
 
->![NOTE]
+>[!NOTE]
 > CorpLite is intended to be light, as the name suggests. This is NOT a "replacement" of CorpBot, nor will never be that. Its sole intentions is to be used as a user app which you can use a few functions from CorpBot in areas where CorpBot might not be available.
 > 
 > - Some cogs I'd like to eventually add are currently missing and it is in the roadwork plans for a future update. Example: Utils, DisplayName, Settings, Humor, Music, etc.
@@ -35,6 +35,12 @@ The bot's basic settings should be in a file called `settings_dict.json` in the 
 Create a venv and use `Requirements.txt` to install the required packages.
 
 # Demo:
+
+![Screenshot1](https://github.com/chrisdodgers/CorpLite/blob/main/Demos/Screenshot1.png)
+
+![Screenshot2](https://github.com/chrisdodgers/CorpLite/blob/main/Demos/Screenshot2.png)
+
+![Screenshot3](https://github.com/chrisdodgers/CorpLite/blob/main/Demos/Screenshot3.png)
 
 
 
