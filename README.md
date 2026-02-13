@@ -67,22 +67,22 @@ Cogless
 └─ Message
 
 ```
-- **/iark** to search an Intel CPU model (e.g. i7-10700K) to get CPU/iGPU info.,
-- **/weg** to search WhateverGreen's IntelHD FAQ for device-id and connector info. Use the optional search_term to search using a big/little endian device-id, AAPL,ig-platform-id, or AAPL,snb-platform-id.,
-- **/alc** to search a codec name or device-id to get layouts for AppleALC.,
-- **/listcodec** to list all codecs available (or optionally search for one).,
-- **/occ** to search OC Configuration.tex. You can search a path (e.g. Kernel Quirks DisableIoMapper) or can search for a specific item (e.g. SecureBootModel).,
-- **/plist** to upload a config.plist to validate its plist structure.,
-- **/slide** to upload a memmap.txt dump to calculate a slide value.,
-- **/pci** to look up a PCI device using pci-ids.ucw.cz. Use vvvv:dddd where vvvv is the vendor id, and dddd is the device id (e.g. 8086:3E30).,
-- **/usb** to look up a USB device using usb-ids.gowdy.us. Use vvvv:dddd where vvvv is the vendor id, and dddd is the device id (e.g. 8086:A36D).,
-- **/encode** to convert data (hex, decimal, binary, base64, and ascii).,
-- **/hexswap** to byte swap a hex value.,
-- **/mem** to convert MiB to lhex (or vise-versa).,
-- **/weather** to get some weather.,
-- **/forecast** to get some weather, for 5 days or whatever.,
-- **/garfield** (or **/gmg**, **/peanuts**, **/dilbert**) for getting some comics! Optionally, can specify a date (e.g. 02-11-2026).,
-- **/randgarfield** (or **/randgmg**, **/randpeanuts**, **/randilbert**) for getting some comics (using a random date)!,
+- **/iark** to search an Intel CPU model (e.g. i7-10700K) to get CPU/iGPU info.
+- **/weg** to search WhateverGreen's IntelHD FAQ for device-id and connector info. Use the optional search_term to search using a big/little endian device-id, AAPL,ig-platform-id, or AAPL,snb-platform-id.
+- **/alc** to search a codec name or device-id to get layouts for AppleALC.
+- **/listcodec** to list all codecs available (or optionally search for one).
+- **/occ** to search OC Configuration.tex. You can search a path (e.g. Kernel Quirks DisableIoMapper) or can search for a specific item (e.g. SecureBootModel).
+- **/plist** to upload a config.plist to validate its plist structure.
+- **/slide** to upload a memmap.txt dump to calculate a slide value.
+- **/pci** to look up a PCI device using pci-ids.ucw.cz. Use vvvv:dddd where vvvv is the vendor id, and dddd is the device id (e.g. 8086:3E30).
+- **/usb** to look up a USB device using usb-ids.gowdy.us. Use vvvv:dddd where vvvv is the vendor id, and dddd is the device id (e.g. 8086:A36D).
+- **/encode** to convert data (hex, decimal, binary, base64, and ascii).
+- **/hexswap** to byte swap a hex value.
+- **/mem** to convert MiB to lhex (or vise-versa).
+- **/weather** to get some weather.
+- **/forecast** to get some weather, for 5 days or whatever.
+- **/garfield** (or **/gmg**, **/peanuts**, **/dilbert**) for getting some comics! Optionally, can specify a date (e.g. 02-11-2026).
+- **/randgarfield** (or **/randgmg**, **/randpeanuts**, **/randilbert**) for getting some comics (using a random date)!
 - **/extensions** to view what cogs are running.
 
 # Known Issues/Random Notes:
@@ -90,7 +90,7 @@ Cogless
 - Using **/randgarfield** *(or any of the other random comic commands)* within private DMs may fail. Especially more or so when DMing CorpLite directly. So far this behavior has not been observed with non-random comic commands nor random comic commands used within a server *(as an external app)*. 
 - Hosting an instance and seeing `"Ignore This Until A Future Update Failed!"` in logs. This is due to very temporarily not defining any cogs within `self.preload` in CogManager. This will be addressed and Settings will at some point be added back here instead of this silly placeholder.
 - *"I can't reply or reference a URL from a message containing a file in use with /slide or /plist."* This currently is a limitation I have not figured out, nor might not be able to figure out. The current workaround is *only* handling direct uploaded attachments and temporarily removing the handling for URLs. If I find a way to fix this functionality - I will bring it back.
-- *"Some comics are missing that were available in CorpBots Comic.py!"* Due to keeping limits in mind of the max amount of slash commands that can be registered *(and trying to keep the bot a bit cleaner)*, I have commented out some comics that seemingly rarely or never get used. The code has been updated for said commics, but they just need to be uncommented if you intend to use them.
+- *"Some comics are missing that were available in CorpBots Comic.py!"* Due to keeping limits in mind of the max amount of slash commands that can be registered *(and trying to keep the bot a bit cleaner)*, I have commented out some comics that seemingly rarely or never get used. The code has been updated for said comics, but they just need to be uncommented if you intend to use them.
 
 *There could be some more known issues/limitations at the current time that I am forgetting to mention.*
 
