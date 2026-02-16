@@ -339,12 +339,12 @@ class Humor(commands.Cog):
 		).edit(interaction,message)
 
 	# Poke Slash Command
-	@app_commands.command(name="dev_poke", description="C'mon, do something...")
+	@app_commands.command(name="poke", description="C'mon, do something...")
 	@app_commands.describe(user="(Optional): Mention a user (e.g. @chris_dodgers)")
 	@app_commands.describe(image="(Optional): Upload an image (e.g. something.png)")
 	@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 	@app_commands.user_install()
-	async def dev_poke(self, interaction: discord.Interaction, user: discord.User | None = None, image: discord.Attachment | None = None):
+	async def poke(self, interaction: discord.Interaction, user: discord.User | None = None, image: discord.Attachment | None = None):
 		"""Pokes the passed url/user/uploaded image."""
 		Utils = self.bot.get_cog("Utils")  # Not sure at all why I am having to load this here when in CorpBot I dont have to do this. Also revisit....
 		# Avoids "interaction did not respond" and also avoids a NoneType.to_dict() error
