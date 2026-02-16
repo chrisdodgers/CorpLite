@@ -2,7 +2,9 @@ import asyncio, discord, time, os, json
 from discord import app_commands, errors
 from discord.ext import commands
 
-build_version = "v0.3.0"
+build_version = "v0.3.1"
+# Added Humor, Jpeg, Clippy, GetImage, and Utils Cogs + updates in temp /help. Jeez I need to move this section into an actual changelog. Will happen probably.
+# Previous v0.3.0 Notes
 # Fixed (in PickList) an issue with attaching the Pager view when only 1 page is present. Now only attaches when more than one page is present.
 # Fixed (in PickList) with PickButtons view where the view would not clear once a selection was made.
 # Added/updated Comic Cog
@@ -16,8 +18,8 @@ build_version = "v0.3.0"
 # Cogs/Cog Manager for setup and load extensions and unload is now working (if setup defs are not async/awaited with using discord.py instead of pycord - cog will fail to load.)
 # Temporarily removed reliance of settings, utils, and mute. Will revisit this.
 
-"""To do: Add a few more cogs including reworking Utils and DisplayName and revisiting preloads in CogManager..."""
-# Would be cool to figure out how to integrate Settings and Utils and fix it up for being solely a user app.
+"""To do: Add a few more cogs and revisiting preloads in CogManager..."""
+# Would be cool to figure out how to integrate Settings and fix it up for being solely a user app.
 # Do not plan on adding *too many* cogs as well... that isn't the point of this fork hence the name. Possibly will create an Extras folder and you can chose additional updated cogs to move into Cogs.
 # Use CorpBot if you require things well out of the scope of this fork.
 # Full credit to @CorpNewt (https://github.com/corpnewt) for creating CorpBot which most of the code here *is* CorpBot. Thanks for making CorpBot and the other amazing tools we use and love.
@@ -153,6 +155,17 @@ async def help(ctx):
         f"- Use __**/forecast**__ to get some weather, for 5 days or whatever.\n"
         f"- Use __**/garfield**__ *(or /gmg, /peanuts, /dilbert)* for getting some comics! Optionally, can specify a date (e.g. 02-11-2026).\n"
         f"- Use __**/randgarfield**__ *(or /randgmg, /randpeanuts, /randilbert)* for getting some comics (using a random date)!\n"
+        f"- Use __**/clippy**__ to make Clippy say something.\n"
+        f"- Use __**/fart**__ to make CorpLite fart.\n"
+        f"- Use __**/french**__ to make CorpLite say something in French.\n"
+        f"- Use __**/german**__ to make CorpLite say something in German - probably.\n"
+        f"- Use __**/fry**__ to burn an uploaded image to a crisp.\n"
+        f"- Use __**/jpeg**__ to jpegify an uploaded image.\n"
+        f"- Use __**/poke**__ to hopefully make *something* do...something...\n"
+        f"- Use __**/memetemp**__ to search and grab a meme template.\n"
+        f"- Use __**/meme**__ to use a meme template id and to make some memes.\n"
+        f"- Use __**/slap**__ to slap someone by specifying who you want to slap (e.g. @chris_dodgers).\n"
+        f"- Use __**/zalgo**__ to enter a message that turns into something...interesting.\n"
         f"- Use __**/extensions**__ to view what cogs are running.\n"
         f"\n"
         f"## About CorpLite:\n"

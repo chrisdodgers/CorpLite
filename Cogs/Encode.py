@@ -85,9 +85,9 @@ class Encode(commands.Cog):
 			"(h)ex/bhex/lhex",
 			"(lb)it/(bb)it"
 		)
-		global DisplayName
-		# Removed Utils
-		DisplayName = self.bot.get_cog("DisplayName")
+
+		# Removed Utils and DisplayName
+
 
 	# Helper methods
 	def _to_bytes(self, in_string):
