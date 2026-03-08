@@ -2,7 +2,8 @@ import asyncio, discord, time, os, json
 from discord import app_commands, errors
 from discord.ext import commands
 
-build_version = "v0.3.1"
+build_version = "v0.3.2"
+# Added Calc and associated update in /help
 # Added Humor, Jpeg, Clippy, GetImage, and Utils Cogs + updates in temp /help. Jeez I need to move this section into an actual changelog. Will happen probably.
 # Previous v0.3.0 Notes
 # Fixed (in PickList) an issue with attaching the Pager view when only 1 page is present. Now only attaches when more than one page is present.
@@ -148,6 +149,7 @@ async def help(ctx):
         f"- Use __**/slide**__ to upload a memmap.txt dump to calculate a slide value.\n"
         f"- Use __**/pci**__ to look up a PCI device using pci-ids.ucw.cz. Use `vvvv:dddd` where `vvvv` is the vendor id, and `dddd` is the device id (e.g. `8086:3E30`).\n"
         f"- Use __**/usb**__ to look up a USB device using usb-ids.gowdy.us. Use `vvvv:dddd` where `vvvv` is the vendor id, and `dddd` is the device id (e.g. `8086:A36D`).\n"
+        f"- Use __**/calc**__ to do math. (e.g: `28492+(285*15)`).\n"
         f"- Use __**/encode**__ to convert data (hex, decimal, binary, base64, and ascii).\n"
         f"- Use __**/hexswap**__ to byte swap a hex value.\n"
         f"- Use __**/mem**__ to convert MiB to lhex (or vise-versa).\n"

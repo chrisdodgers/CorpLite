@@ -47,6 +47,8 @@ Clippy
 └─ Clippy
 CogManager
 └─ CogManager
+Calc
+└─ Calc
 Comic
 └─ Comic
 Encode
@@ -83,6 +85,7 @@ Cogless
 - **/slide** to upload a memmap.txt dump to calculate a slide value.
 - **/pci** to look up a PCI device using pci-ids.ucw.cz. Use vvvv:dddd where vvvv is the vendor id, and dddd is the device id (e.g. 8086:3E30).
 - **/usb** to look up a USB device using usb-ids.gowdy.us. Use vvvv:dddd where vvvv is the vendor id, and dddd is the device id (e.g. 8086:A36D).
+- **/calc** to do math. (e.g: `28492+(285*15)`).
 - **/encode** to convert data (hex, decimal, binary, base64, and ascii).
 - **/hexswap** to byte swap a hex value.
 - **/mem** to convert MiB to lhex (or vise-versa).
