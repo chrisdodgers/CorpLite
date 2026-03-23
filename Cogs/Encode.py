@@ -530,3 +530,53 @@ class Encode(commands.Cog):
 			return await ctx.send(Nullify.escape_all(self._convert_value(value,from_type,to_type)))
 		except Exception as e:
 			return await ctx.send(Nullify.escape_all("I couldn't make that conversion:\n{}".format(e)))
+
+	@commands.command(aliases=["fbmem", "stolenmem", "unifiedmem", "cursormem"])
+	async def mem(self, ctx, *, input=None):
+		"""Converts between MiB and little-endian hexadecimal (lhex) for calculating stolenmem, fbmem, etc. values."""
+		usage = 'Usage: `{}mem [input] (e.g. 26MB or 0000A001)`'.format(ctx.prefix)
+		if input is None:
+			return await ctx.send(usage)
+
+		try:
+			val = input.strip()
+			mib = ["mib", "mb", "m"]
+
+			# Determine if the input value is MiB or lhex.
+			is_mib = any(x in val.lower() for x in mib)
+			is_lhex = len(self._check_hex(val))
+			if not is_mib and not is_lhex:
+				return await ctx.send(usage)
+			# Set the from and to type based on the above check.
+			if is_mib:
+				from_type = "mib"
+				to_type = "lhex"
+			else:
+				from_type = "lhex"
+				to_type = "mib"
+
+			# Convert MiB to lhex
+			if from_type == "mib" and to_type == "lhex":
+				# Store as a float and remove mib/mb/m
+				num = float(re.sub('|'.join(mib), '', val.lower()).strip())
+				# Convert to bytes
+				bytes_val = int(num * 1024 * 1024)
+				# Format from an int to a hex value and pre-pad with 8 characters
+				hex_val = "{:08x}".format(bytes_val)
+				# Convert from hex to lhex
+				out = self._convert_value(hex_val, "hex", "lhex")
+				return await ctx.send(Nullify.escape_all(self._check_hex(out)))
+			# Seacrest out!
+
+			# Convert lhex to MiB
+			elif from_type == "lhex" and to_type == "mib":
+				# Convert from lhex to decimal
+				dec_val = self._convert_value(val, "lhex", "decimal")
+				# Convert to MiB
+				mib_val = round(int(dec_val) / (1024 * 1024), 4)
+				return await ctx.send(f"{mib_val} MiB")
+			else:
+				return await ctx.send(usage)
+		except Exception:
+			return await ctx.send(
+				Nullify.escape_all("I couldn't make that conversion!"))
