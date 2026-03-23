@@ -2,8 +2,10 @@ import asyncio, discord, time, os, json
 from discord import app_commands, errors
 from discord.ext import commands
 
-build_version = "v0.3.2"
+build_version = "v0.3.3" # Made some minor improvements/edits to /mem in Encode.
+# Previous v0.3.2 notes
 # Added Calc and associated update in /help
+# Previous v0.3.1
 # Added Humor, Jpeg, Clippy, GetImage, and Utils Cogs + updates in temp /help. Jeez I need to move this section into an actual changelog. Will happen probably.
 # Previous v0.3.0 Notes
 # Fixed (in PickList) an issue with attaching the Pager view when only 1 page is present. Now only attaches when more than one page is present.

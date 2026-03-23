@@ -390,7 +390,7 @@ class Encode(commands.Cog):
 	@app_commands.user_install()
 	@app_commands.autocomplete(from_type=mem_type_autocomplete, to_type=mem_type_autocomplete)
 	async def mem(self, interaction: discord.Interaction, from_type: str, to_type: str, value: str):
-		"""Converts between MiB and little-endian hexadecimal (lhex)."""
+		"""Converts between MiB and little-endian hexadecimal (lhex) for calculating fbmem,stolenmem,etc values."""
 
 		# Avoids "interaction did not respond" and also avoids a NoneType.to_dict() error
 		await interaction.response.defer(thinking=True)
@@ -399,17 +399,20 @@ class Encode(commands.Cog):
 			from_type = from_type.lower()
 			to_type = to_type.lower()
 			val = value.strip()
+			mib = ["mib", "mb", "m"]
 
 			# Convert MiB to lhex
 			if from_type == "mib" and to_type == "lhex":
-				# Store as a float, remove mib if present in the search
-				num = float(val.lower().replace("mib", "").strip())
+				# Store as a float and remove mib/mb/m if present
+				num = float(re.sub('|'.join(mib), '', val.lower()).strip())
 				# Convert to bytes
 				bytes_val = int(num * 1024 * 1024)
-				# Use _convert_value to handle decimal to lhex conversion
-				out = self._convert_value(str(bytes_val), "decimal", "lhex")
-				return await interaction.followup.send(Nullify.escape_all(out))
-                # Seacrest out!
+				# Format from an int to a hex value and pre-pad with 8 characters
+				hex_val = "{:08x}".format(bytes_val)
+				# Convert from hex to lhex
+				out = self._convert_value(hex_val, "hex", "lhex")
+				return await interaction.followup.send(Nullify.escape_all(self._check_hex(out)))
+			# Seacrest out!
 
 			# Convert lhex to MiB
 			elif from_type == "lhex" and to_type == "mib":
@@ -417,11 +420,9 @@ class Encode(commands.Cog):
 				dec_val = self._convert_value(val, "lhex", "decimal")
 				# Convert to MiB
 				mib_val = round(int(dec_val) / (1024 * 1024), 4)
-				return await interaction.followup.send(f"{mib_val}MiB")
-
+				return await interaction.followup.send(f"{mib_val} MiB")
 			else:
 				return await interaction.followup.send("Invalid conversion. Use proper `MiB` or `lhex` values only.")
-
-		except Exception as e:
-			print(f"[mem] Exception occurred: {e}")
-			return await interaction.followup.send(Nullify.escape_all("I couldn't make that conversion:\n{}".format(e)))
+		except Exception:
+			return await interaction.followup.send(
+				Nullify.escape_all("I couldn't make that conversion!"))
