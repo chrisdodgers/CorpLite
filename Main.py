@@ -2,7 +2,7 @@ import asyncio, discord, time, os, json
 from discord import app_commands, errors
 from discord.ext import commands
 
-build_version = "v0.3.3" # Made some minor improvements/edits to /mem in Encode.
+build_version = "v0.3.4" # Made even more improvements/cleanup to /mem in encode. Thanks Corp for the suggestions!
 # Previous v0.3.2 notes
 # Added Calc and associated update in /help
 # Previous v0.3.1

@@ -374,55 +374,35 @@ class Encode(commands.Cog):
 		hex_str = "".join(["".join(x) for x in hex_rev])
 		await interaction.followup.send(hex_str.upper())
 
-	# Define and process types for use for autocomplete in /mem
-	async def mem_type_autocomplete(self, interaction: discord.Interaction, current: str):
-		types = ["MiB", "lhex"]
-		results = [t for t in types if current.lower() in t.lower()]
-		return [app_commands.Choice(name=t, value=t) for t in results[:25]]
-
-
 	# Mem Slash Command:
 	@app_commands.command(name="mem", description="Convert between MiB and little-endian hex.")
-	@app_commands.describe(from_type="Convert from (MiB or lhex):")
-	@app_commands.describe(to_type="Convert to (MiB or lhex):")
-	@app_commands.describe(value="The value you are wanting to convert (e.g. 26MiB or 0000A001)")
+	@app_commands.describe(input="The value you are wanting to convert (e.g. 26MB or 0000A001)")
 	@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 	@app_commands.user_install()
-	@app_commands.autocomplete(from_type=mem_type_autocomplete, to_type=mem_type_autocomplete)
-	async def mem(self, interaction: discord.Interaction, from_type: str, to_type: str, value: str):
-		"""Converts between MiB and little-endian hexadecimal (lhex) for calculating fbmem,stolenmem,etc values."""
+	async def mem(self, interaction: discord.Interaction, input: str):
+		"""Converts between MiB and little-endian hexadecimal (lhex) for calculating stolenmem, fbmem, etc. values."""
 
-		# Avoids "interaction did not respond" and also avoids a NoneType.to_dict() error
 		await interaction.response.defer(thinking=True)
 
 		try:
-			from_type = from_type.lower()
-			to_type = to_type.lower()
-			val = value.strip()
-			mib = ["mib", "mb", "m"]
+			val = input.strip()
+			# Determine if the input value is MiB. If not MiB, will assume the input is lhex and will catch bad input with the try/except.
+			is_mib = "m" in val.lower()
 
-			# Convert MiB to lhex
-			if from_type == "mib" and to_type == "lhex":
-				# Store as a float and remove mib/mb/m if present
-				num = float(re.sub('|'.join(mib), '', val.lower()).strip())
-				# Convert to bytes
-				bytes_val = int(num * 1024 * 1024)
-				# Format from an int to a hex value and pre-pad with 8 characters
-				hex_val = "{:08x}".format(bytes_val)
-				# Convert from hex to lhex
-				out = self._convert_value(hex_val, "hex", "lhex")
-				return await interaction.followup.send(Nullify.escape_all(self._check_hex(out)))
-			# Seacrest out!
-
-			# Convert lhex to MiB
-			elif from_type == "lhex" and to_type == "mib":
-				# Convert from lhex to decimal
-				dec_val = self._convert_value(val, "lhex", "decimal")
-				# Convert to MiB
-				mib_val = round(int(dec_val) / (1024 * 1024), 4)
-				return await interaction.followup.send(f"{mib_val} MiB")
+			# Convert MiB to lhex:
+			if is_mib:
+				# Store as a float and only store "0-9" and "." - ignoring other characters.
+				num = float("".join([x for x in val if x in "01234596789."]))
+				# Convert to bytes:
+				bytes_val = int(num * 1024 ** 2)
+				# Convert from decimal to lhex (using _check_hex to omit `0x` in the output). Using lhex32 which will auto-pad.
+				return await interaction.followup.send(
+					self._check_hex(self._convert_value(bytes_val, "decimal", "lhex32")))
 			else:
-				return await interaction.followup.send("Invalid conversion. Use proper `MiB` or `lhex` values only.")
+				# Convert from lhex to decimal:
+				dec_val = self._convert_value(val, "lhex32", "decimal")
+				# Convert to MiB (using abs to ensure we always get a positive value):
+				mib_val = round(abs(int(dec_val)) / (1024 ** 2), 4)
+				return await interaction.followup.send(f"{mib_val} MiB")
 		except Exception:
-			return await interaction.followup.send(
-				Nullify.escape_all("I couldn't make that conversion!"))
+			return await interaction.followup.send("I couldn't make that conversion!")
