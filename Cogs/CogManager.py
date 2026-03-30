@@ -1,21 +1,25 @@
 import discord, os, dis, subprocess
 from discord import app_commands
 from discord.ext import commands
-from Cogs import Message, PickList
+from Cogs import Settings, Message, PickList
 
 async def setup(bot):
 	# Add the bot
-	# Removed settings since it isn't being used with CorpLite at the current moment.
-	await bot.add_cog(CogManager(bot))
+	# Re-added Settings
+	try:
+		settings = bot.get_cog("Settings")
+	except:
+		settings = None
+	await bot.add_cog(CogManager(bot, settings))
 
 
 class CogManager(commands.Cog):
 
 	# Init with the bot reference, and a reference to the settings var
-	def __init__(self, bot):
-		self.preloads = ("Ignore This Until A Future Update",) # Temp removed DisplayName, Settings, and Mute since it is not currently being used for CorpLite. Crappy place holder yes, but retaining this logic until I revisit in a future update.
+	def __init__(self, bot, settings):
+		self.preloads = ("Cogs.Utils","Cogs.Settings")
 		self.bot = bot
-
+		self.settings = settings
 
 	@commands.Cog.listener()
 	async def on_ready(self):
@@ -200,7 +204,7 @@ class CogManager(commands.Cog):
 				# Got the target extension - gather its info
 				for cog in ext_dict[ext_name]:
 					try:
-						comms = len([x for x in self.bot.get_cog(cog).get_commands() if not x.hidden])
+						comms = len([x for x in self.bot.tree.get_commands() if not x.hidden])
 					except:
 						comms = 0  # Zero it out if it's not a cog, or has none
 					fields.append({
@@ -228,7 +232,7 @@ class CogManager(commands.Cog):
 
 	# Imports Slash Command
 	@app_commands.command(name="imports", description="Outputs the extensions imported by the passed extension.")
-	@app_commands.describe(extension="fill this in later")
+	@app_commands.describe(extension="Enter an extension: (e.g Encode).")
 	@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 	@app_commands.user_install()
 	async def imports(self, interaction: discord.Interaction, extension: str | None = None):
@@ -256,7 +260,7 @@ class CogManager(commands.Cog):
 
 	# Extensions Slash Command
 	@app_commands.command(name="extensions", description="Outputs the cogs and command count")
-	@app_commands.describe(extension="fill this in later")
+	@app_commands.describe(extension="Enter an extension: (e.g Encode).")
 	@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 	@app_commands.user_install()
 	async def extensions(self, interaction: discord.Interaction, extension: str | None = None):
@@ -268,5 +272,38 @@ class CogManager(commands.Cog):
 		# Run check_extension - (function that was previously part of this command but now not. Notes on why this is I made in OpenCore for ALC. Same reasoning behind this.)
 		return await self.check_extension(interaction, extension)
 
-	
+	# Reload Slash Command
+	@app_commands.command(name="reload", description="Reloads the passed extension (owner only).")
+	@app_commands.describe(extension="Enter an extension: (e.g Encode).")
+	@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+	@app_commands.user_install()
+	async def reload(self, interaction: discord.Interaction, extension: str | None = None):
+		"""Reloads the passed extension - or all if none passed."""
+		# Only allow owner
+		isOwner = self.settings.isOwner(interaction.user)
+		if isOwner is None:
+			msg = 'I have not been claimed, *yet*.'
+			await interaction.response.send_message(msg)
+			return
+		elif isOwner == False:
+			msg = 'You are not the *true* owner of me.  Only the rightful owner can use this command.'
+			await interaction.response.send_message(msg)
+			return
 
+		if extension is None:
+			message = await interaction.response.send_message("Reloading all extensions...")
+			result = await self._load_extension()
+			res_str = "*{}* of *{}* extensions reloaded successfully!".format(result[0], result[1])
+			await interaction.edit_original_response(content=res_str)
+			return
+
+		message = await interaction.response.send_message(
+			"Reloading extensions related to `{}`...".format(extension.replace("`", "").replace("\\", "")))
+		result = await self._load_extension(extension)
+
+		if result[1] == 0:
+			await interaction.edit_original_response(content="I couldn't find that extension.")
+		else:
+			e_string = "extension" if result[1] == 1 else "extensions"
+			await interaction.edit_original_response(
+				content="{}/{} connected {} reloaded!".format(result[0], result[1], e_string))

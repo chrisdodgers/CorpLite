@@ -92,7 +92,19 @@ class Utils(commands.Cog):
 		# Use the new
 		return self.bot.user.default_avatar.url
 
+	def is_owner(self,interaction,member=None):
+		# Checks if the user in the passed context is an owner
+		settings = self.bot.get_cog("Settings")
+		if not settings: return False
+		member = interaction.user if not member else member
+		return settings.isOwner(member)
 
+	async def is_owner_reply(self,interaction,member=None,not_claimed="I have not been claimed, *yet*.",not_owner="You are not the *true* owner of me.  Only the rightful owner can use this command."):
+		# Auto-replies if the user isn't an owner
+		are_we = self.is_owner(interaction,member)
+		if are_we is None: await interaction.response.send_message(not_claimed)
+		elif are_we == False: await interaction.response.send_message(not_owner)
+		return are_we
 	async def get_message_content(self,message,ctx=None,strip_prefix=True):
 		# Returns the adjusted content of a message - stripping any command
 		# call prefix if needed

@@ -2,27 +2,9 @@ import asyncio, discord, time, os, json
 from discord import app_commands, errors
 from discord.ext import commands
 
-build_version = "v0.3.4" # Made even more improvements/cleanup to /mem in encode. Thanks Corp for the suggestions!
-# Previous v0.3.2 notes
-# Added Calc and associated update in /help
-# Previous v0.3.1
-# Added Humor, Jpeg, Clippy, GetImage, and Utils Cogs + updates in temp /help. Jeez I need to move this section into an actual changelog. Will happen probably.
-# Previous v0.3.0 Notes
-# Fixed (in PickList) an issue with attaching the Pager view when only 1 page is present. Now only attaches when more than one page is present.
-# Fixed (in PickList) with PickButtons view where the view would not clear once a selection was made.
-# Added/updated Comic Cog
-# Added /slide to OpenCore cog
-# Cleaned up a bit for initial fork and commit.
-# Renamed from CorpLite.py to Main.py and updated references.
+build_version = "v0.4.0"
+# Finally yeeted the growing changelog out of here. Not sure why I put one in here to begin with, at least that you could see if you are reading this.
 
-# Previous v0.2.1 Notes:
-# Moved the actual app_commands back into their cogs where they belong.
-# Using CogManager and Shards now:
-# Cogs/Cog Manager for setup and load extensions and unload is now working (if setup defs are not async/awaited with using discord.py instead of pycord - cog will fail to load.)
-# Temporarily removed reliance of settings, utils, and mute. Will revisit this.
-
-"""To do: Add a few more cogs and revisiting preloads in CogManager..."""
-# Would be cool to figure out how to integrate Settings and fix it up for being solely a user app.
 # Do not plan on adding *too many* cogs as well... that isn't the point of this fork hence the name. Possibly will create an Extras folder and you can chose additional updated cogs to move into Cogs.
 # Use CorpBot if you require things well out of the scope of this fork.
 # Full credit to @CorpNewt (https://github.com/corpnewt) for creating CorpBot which most of the code here *is* CorpBot. Thanks for making CorpBot and the other amazing tools we use and love.
@@ -114,81 +96,7 @@ async def on_all_shards_ready():
         print("CorpLite is ready for action!")
     await bot.tree.sync()
     print("Synchronizing Slash Commands...")
-    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Rush"))
-    print("We're listen to Rush!")
 
-# Utility function to split long messages into chunks - Probably will remove this once I integrate the Help cog instead of the help command below.
-def split_message(message, limit=2000):
-    words = message.split(' ')  # Split the message into words
-    chunks = []
-    current_chunk = ""
-
-    for word in words:
-        if len(current_chunk) + len(word) + 1 > limit:  # Check if adding the word exceeds the limit
-            chunks.append(current_chunk.strip())  # Add the current chunk to chunks
-            current_chunk = ""  # Reset the current chunk
-        current_chunk += word + ' '  # Add the word to the current chunk
-
-    if current_chunk.strip():  # Check if the last chunk is not empty
-        chunks.append(current_chunk.strip())  # Add the last chunk to chunks
-
-    return chunks
-
-# Help Slash Command (temp not using the help cog - will eventually re-work and add the help cog and remove this):
-@bot.tree.command(name="help", description="Learn how to use CorpLite")
-@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-@app_commands.user_install()
-async def help(ctx):
-    response = (
-        f"# How to use CorpLite:\n"
-        f"\n"
-        f"- Use __**/iark**__ to search an Intel CPU model (e.g. `i7-10700K`) to get CPU/iGPU info.\n"
-        f"- Use __**/weg**__ to search WhateverGreen's IntelHD FAQ for device-id and connector info. Use the optional `search_term` to search using a big/little endian device-id, AAPL,ig-platform-id, or AAPL,snb-platform-id.\n"
-        f"- Use __**/alc**__ to search a codec name or device-id to get layouts for AppleALC.\n"
-        f"- Use __**/listcodec**__ to list all codecs available *(or optionally search for one)*.\n"
-        f"- Use __**/occ**__ to search OC Configuration.tex. You can search a path (e.g. Kernel Quirks DisableIoMapper) or can search for a specific item (e.g. SecureBootModel).\n"
-        f"- Use __**/plist**__ to upload a config.plist to validate its plist structure.\n"
-        f"- Use __**/slide**__ to upload a memmap.txt dump to calculate a slide value.\n"
-        f"- Use __**/pci**__ to look up a PCI device using pci-ids.ucw.cz. Use `vvvv:dddd` where `vvvv` is the vendor id, and `dddd` is the device id (e.g. `8086:3E30`).\n"
-        f"- Use __**/usb**__ to look up a USB device using usb-ids.gowdy.us. Use `vvvv:dddd` where `vvvv` is the vendor id, and `dddd` is the device id (e.g. `8086:A36D`).\n"
-        f"- Use __**/calc**__ to do math. (e.g: `28492+(285*15)`).\n"
-        f"- Use __**/encode**__ to convert data (hex, decimal, binary, base64, and ascii).\n"
-        f"- Use __**/hexswap**__ to byte swap a hex value.\n"
-        f"- Use __**/mem**__ to convert MiB to lhex (or vise-versa).\n"
-        f"- Use __**/weather**__ to get some weather.\n"
-        f"- Use __**/forecast**__ to get some weather, for 5 days or whatever.\n"
-        f"- Use __**/garfield**__ *(or /gmg, /peanuts, /dilbert)* for getting some comics! Optionally, can specify a date (e.g. 02-11-2026).\n"
-        f"- Use __**/randgarfield**__ *(or /randgmg, /randpeanuts, /randilbert)* for getting some comics (using a random date)!\n"
-        f"- Use __**/clippy**__ to make Clippy say something.\n"
-        f"- Use __**/fart**__ to make CorpLite fart.\n"
-        f"- Use __**/french**__ to make CorpLite say something in French.\n"
-        f"- Use __**/german**__ to make CorpLite say something in German - probably.\n"
-        f"- Use __**/fry**__ to burn an uploaded image to a crisp.\n"
-        f"- Use __**/jpeg**__ to jpegify an uploaded image.\n"
-        f"- Use __**/poke**__ to hopefully make *something* do...something...\n"
-        f"- Use __**/memetemp**__ to search and grab a meme template.\n"
-        f"- Use __**/meme**__ to use a meme template id and to make some memes.\n"
-        f"- Use __**/slap**__ to slap someone by specifying who you want to slap (e.g. @chris_dodgers).\n"
-        f"- Use __**/zalgo**__ to enter a message that turns into something...interesting.\n"
-        f"- Use __**/extensions**__ to view what cogs are running.\n"
-        f"\n"
-        f"## About CorpLite:\n"
-        f"\n"
-        f"This is test concept of a light version of CorpBot - hence the name CorpLite. \n"
-        f"CorpLite is designed to run solely as a user app using slash commands. A few key cogs have been added, and possibly a few more will be added at a later time. \n"
-        f"Since CorpLite is built to be solely used as a user app - it can be used in DMs and servers that allow the use of external apps. \n"
-        f"---------------------------------------\n"
-        f"`Full credit to @corpnewt for creating CorpBot https://github.com/corpnewt/CorpBot.py and for creating many of the tools we use and love.` \n"
-        f"`Current running build of CorpLite: {build_version} - @chris_dodgers`\n"
-
-    )
-    # Split response into multiple messages since it exceeds the 2000 char limit
-    chunks = split_message(response)
-    await ctx.response.send_message(content=chunks[0], ephemeral=True)
-    # Send follow-up messages if there are more chunks
-    for chunk in chunks[1:]:
-        if chunk.strip():  # Check if the chunk is not empty
-            await ctx.followup.send(content=chunk[:2000], ephemeral=True)
 
 # Run the bot
 try:

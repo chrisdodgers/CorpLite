@@ -18,7 +18,7 @@ The idea behind this fork is I thought to myself, *"hmmm, wouldn't it be kind of
 ## Don't want nor care to host your own instance?
 ### [Click here to add CorpLite as a Discord User App.](https://discord.com/oauth2/authorize?client_id=1430625110947004506)
 
-*Once added, you will see CorpLite available in your Discord App Directory. You will also see it if you type `/` anywhere within Discord and click/tap the Corp logo to see all the available commands. Additionally, you can use `/help` to also see all the available commands with their descriptions.* 
+*Once added, you will see CorpLite available in your Discord App Directory. You will also see it if you type `/` anywhere within Discord and click/tap the Corp logo to see all the available commands. Additionally, you can use `/help` to also see all the available cogs/commands with their use descriptions.* 
 
 
 ### *I want to host my own instance*:
@@ -43,16 +43,20 @@ Create a venv and use `Requirements.txt` to install the required packages.
 
 # Current Extensions and Commands:
 ```
+Bot
+└─ Bot
+Calc
+└─ Calc
 Clippy
 └─ Clippy
 CogManager
 └─ CogManager
-Calc
-└─ Calc
 Comic
 └─ Comic
 Encode
 └─ Encode
+Help
+└─ Help
 Humor
 └─ Humor
 IntelArk
@@ -65,53 +69,174 @@ PciUsb
 └─ PciUsb
 PickList
 └─ PickList
+Settings
+└─ Settings
 Utils
 └─ Utils
 Weather
 └─ Weather
 Cogless
+└─ ProgressBar
 └─ GetImage
 └─ Nullify
 └─ FuzzySearch
+└─ ReadableTime
 └─ DL
 └─ Message
 ```
-- **/iark** to search an Intel CPU model (e.g. i7-10700K) to get CPU/iGPU info.
-- **/weg** to search WhateverGreen's IntelHD FAQ for device-id and connector info. Use the optional search_term to search using a big/little endian device-id, AAPL,ig-platform-id, or AAPL,snb-platform-id.
-- **/alc** to search a codec name or device-id to get layouts for AppleALC.
-- **/listcodec** to list all codecs available (or optionally search for one).
-- **/occ** to search OC Configuration.tex. You can search a path (e.g. Kernel Quirks DisableIoMapper) or can search for a specific item (e.g. SecureBootModel).
-- **/plist** to upload a config.plist to validate its plist structure.
-- **/slide** to upload a memmap.txt dump to calculate a slide value.
-- **/pci** to look up a PCI device using pci-ids.ucw.cz. Use vvvv:dddd where vvvv is the vendor id, and dddd is the device id (e.g. 8086:3E30).
-- **/usb** to look up a USB device using usb-ids.gowdy.us. Use vvvv:dddd where vvvv is the vendor id, and dddd is the device id (e.g. 8086:A36D).
-- **/calc** to do math. (e.g: `28492+(285*15)`).
-- **/encode** to convert data (hex, decimal, binary, base64, and ascii).
-- **/hexswap** to byte swap a hex value.
-- **/mem** to convert MiB to lhex (or vise-versa).
-- **/weather** to get some weather.
-- **/forecast** to get some weather, for 5 days or whatever.
-- **/garfield** (or **/gmg**, **/peanuts**, **/dilbert**) for getting some comics! Optionally, can specify a date (e.g. 02-11-2026).
-- **/randgarfield** (or **/randgmg**, **/randpeanuts**, **/randilbert**) for getting some comics (using a random date)!
-- **/clippy** to make Clippy say something.
-- **/fart** to make CorpLite fart.
-- **/french** to make CorpLite say something in French.
-- **/german** to make CorpLite say something in German - probably.
-- **/fry** to burn an uploaded image to a crisp.
-- **/jpeg** to jpegify an uploaded image.
-- **/poke** to hopefully make something do...something...
-- **/memetemp** to search and grab a meme template.
-- **/meme** to use a meme template id and to make some memes.
-- **/slap** to slap someone by specifying who you want to slap (e.g. *@chris_dodgers*).
-- **/zalgo** to enter a message that turns into something...interesting.
-- **/extensions** to view what cogs are running.
+[Bot](#bot), [Calc](#calc), [Clippy](#clippy), [CogManager](#cogmanager), [Comic](#comic), [Encode](#encode), [Help](#help), [Humor](#humor), [IntelArk](#intelark), [Jpeg](#jpeg), [OpenCore](#opencore), [PciUsb](#pciusb), [Settings](#settings), [Weather](#weather)
+
+## Bot
+####	Bot Cog (5 commands) - Bot.py Extension:
+    /hostinfo
+      └─ List info about the bot's host environment.
+    /ping
+      └─ Feeling lonely?
+    /presence <playing_type> <content> <url>
+      └─ Changes the bot's presence (owner-only).
+    /reboot <install_or_update>
+      └─ Reboots the bot (owner only).
+    /uptime
+      └─ Lists the bot's uptime.
+
+## Calc
+####	Calc Cog (1 command) - Calc.py Extension:
+    /calc <formula>
+      └─ Do some math.
+
+## Clippy
+####	Clippy Cog (1 command) - Clippy.py Extension:
+    /clippy <text>
+      └─ You should run this command. Can I help?
+
+## CogManager
+####	CogManager Cog (3 commands) - CogManager.py Extension:
+    /extensions <extension>
+      └─ Outputs the cogs and command count
+    /imports <extension>
+      └─ Outputs the extensions imported by the passed extension.
+    /reload <extension>
+      └─ Reloads the passed extension (owner only).
+
+## Comic
+####	Comic Cog (8 commands) - Comic.py Extension:
+    /dilbert <date>
+      └─ Get a Dilbert comic.
+    /garfield <date>
+      └─ Get a Garfield comic.
+    /gmg <date>
+      └─ Get a Garfield Minus Garfield comic.
+    /peanuts <date>
+      └─ Get a Peanuts comic.
+    /randgarfield
+      └─ Get a random Garfield comic.
+    /randgmg
+      └─ Get a random Garfield Minus Garfield comic.
+    /randilbert
+      └─ Get a random Dilbert comic.
+    /randpeanuts
+      └─ Get a random Peanuts comic.
+
+## Encode
+####	Encode Cog (3 commands) - Encode.py Extension:
+    /encode <from_type> <to_type> <value>
+      └─ Data converter that supports hex, decimal, binary, base64, and ascii.
+    /hexswap <input_hex>
+      └─ Enter a hex value to byte swap.
+    /mem <input>
+      └─ Convert between MiB and little-endian hex.
+
+## Help
+####	Help Cog (3 commands) - Help.py Extension:
+    /dumphelp <cog_or_command>
+      └─ Dumps and uploads a timestamped, formatted list of commands and descriptions.
+    /dumpmarkdown <cog_or_command>
+      └─ Dumps and uploads a timestamped, markdown-formatted list of commands and desc...
+    /help <command>
+      └─ Get Help
+
+## Humor
+####	Humor Cog (9 commands) - Humor.py Extension:
+    /fart
+      └─ Let some air out! Maybe on someone.
+    /french
+      └─ Excuse my French.
+    /fry <image>
+      └─ Fry an image to a crisp.
+    /german
+      └─ I think this is German.
+    /meme <template_id> <text_1> <text_2>
+      └─ Time for some memes.
+    /memetemps <search_term>
+      └─ Grab a meme template.
+    /poke <user> <image>
+      └─ C'mon, do something...
+    /slap <user>
+      └─ What did the 5 fingers say to the face?
+    /zalgo <message>
+      └─ Send a funny looking message.
+
+## IntelArk
+####	IntelArk Cog (1 command) - IntelArk.py Extension:
+    /iark <cpu_model>
+      └─ Get Intel CPU/iGPU info
+
+## Jpeg
+####	Jpeg Cog (1 command) - Jpeg.py Extension:
+    /jpeg <image>
+      └─ Do I look like I know what a JPEG is?
+
+## OpenCore
+####	OpenCore Cog (6 commands) - OpenCore.py Extension:
+    /alc <search_term>
+      └─ Search a codec name or device-id to get layouts for AppleALC
+    /listcodecs <search_term>
+      └─ Lists the codecs in the AppleALCCodecs.plist
+    /occ <search_path>
+      └─ Search OC Configuration.tex
+    /plist <file>
+      └─ Validates .plist file structure
+    /slide <input_hex>
+      └─ Calculates your slide boot-arg based on an input address (in hex).
+    /weg <search_term>
+      └─ Searches WhateverGreen IntelHD FAQ for device-id and connector info
+
+## PciUsb
+####	PciUsb Cog (2 commands) - PciUsb.py Extension:
+    /pci <ven_dev>
+      └─ Searches pci-ids.ucw.cz for the passed PCI ven:dev id.
+    /usb <ven_dev>
+      └─ Searches usb-ids.gowdy.us for the passed USB ven:dev id.
+
+## Settings
+####	Settings Cog (6 commands) - Settings.py Extension:
+    /addowner <member>
+      └─ Adds an owner to the owner list (owner only).
+    /claim
+      └─ Become a God!... Or something like that.
+    /disown
+      └─ Revokes all ownership of the bot (owner only).
+    /flush
+      └─ Flush the bot settings to disk (owner only).
+    /owners
+      └─ Lists the bot's current owners.
+    /remowner <member>
+      └─ Removes an owner from the owner list (owner only).
+
+## Weather
+####	Weather Cog (2 commands) - Weather.py Extension:
+    /forecast <city_name>
+      └─ Gets some weather, for 5 days or whatever.
+    /weather <city_name>
+      └─ Get some weather
 
 # Known Issues/Random Notes:
 
 - Using **/randgarfield** *(or any of the other random comic commands)* within private DMs may fail to embed. Sometimes it works, sometimes it doesn't. This also applies to **/meme** from my testing. Its a 50/50 if it embeds right within DMs.
-- Hosting an instance and seeing `"Ignore This Until A Future Update Failed!"` in logs. This is due to very temporarily not defining any cogs within `self.preload` in CogManager. This will be addressed and Settings will at some point be added back here instead of this silly placeholder.
-- *"I can't reply or reference a URL from a message containing a file in use with /slide or /plist."* This currently is a limitation that will most likely not be solved relating to DMs. The current workaround is *only* handling direct uploaded attachments and temporarily removing the handling for message URLs.
-- *"Some comics are missing that were available in CorpBots Comic.py!"* Due to keeping limits in mind of the max amount of slash commands that can be registered *(and trying to keep the bot a bit cleaner)*, I have commented out some comics that seemingly rarely or never get used. The code has been updated for said comics, but they just need to be uncommented if you intend to use them.
+- As of this writing, *any* of the Garfield commands no longer work.
+- *"I can't reply or reference a URL from a message containing a file in use with /slide or /plist."*: This currently is a limitation that will most likely not be solved relating to DMs. The current workaround is *only* handling direct uploaded attachments and temporarily removing the handling for message URLs.
+- *"Some comics are missing that were available in CorpBots Comic.py!"*: Due to keeping limits in mind of the max amount of slash commands that can be registered *(and trying to keep the bot a bit cleaner)*, I have commented out some comics that seemingly rarely or never get used. The code has been updated for said comics, but they just need to be uncommented if you intend to use them.
+- *"I'm hosting CorpLite and its presence appears offline"*: This one is a fun instance of Discord being Discord. If your app has 0 guild installs and only user installs - this will happen. Solution: add CorpLite to at least one guild, even if just a "dummy" guild. Also with this said, `/status` will not be coming to CorpLite. Regardless of setting this, it will always show up as `online` if the app contains a single user install. Again, Discord problem and not a me problem.
 
 *There could be some more known issues/limitations at the current time that I am forgetting to mention.*
 

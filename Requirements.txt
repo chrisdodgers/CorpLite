@@ -3,3 +3,6 @@ geopy
 regex
 pillow
 plusminus
+py-cpuinfo
+psutil
+certifi

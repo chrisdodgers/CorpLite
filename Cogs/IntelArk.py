@@ -27,9 +27,6 @@ class IntelArk(commands.Cog):
         # Avoids "interaction did not respond" and also avoids a NoneType.to_dict() error
         await interaction.response.defer(thinking=True)
 
-        # Load and define the IntelArk Cog
-        # ia_cog = bot.get_cog("IntelArk")
-
         args = {
             "title": "Intel Search",
             "description": "Searching Intel ARK...",

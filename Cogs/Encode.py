@@ -396,8 +396,7 @@ class Encode(commands.Cog):
 				# Convert to bytes:
 				bytes_val = int(num * 1024 ** 2)
 				# Convert from decimal to lhex (using _check_hex to omit `0x` in the output). Using lhex32 which will auto-pad.
-				return await interaction.followup.send(
-					self._check_hex(self._convert_value(bytes_val, "decimal", "lhex32")))
+				return await interaction.followup.send(self._check_hex(self._convert_value(bytes_val, "decimal", "lhex32")))
 			else:
 				# Convert from lhex to decimal:
 				dec_val = self._convert_value(val, "lhex32", "decimal")
