@@ -42,48 +42,8 @@ Create a venv and use `Requirements.txt` to install the required packages.
 ![Screenshot3](https://github.com/chrisdodgers/CorpLite/blob/main/Demos/Screenshot3.png)
 
 # Current Extensions and Commands:
-```
-Bot
-└─ Bot
-Calc
-└─ Calc
-Clippy
-└─ Clippy
-CogManager
-└─ CogManager
-Comic
-└─ Comic
-Encode
-└─ Encode
-Help
-└─ Help
-Humor
-└─ Humor
-IntelArk
-└─ IntelArk
-Jpeg
-└─ Jpeg
-OpenCore
-└─ OpenCore
-PciUsb
-└─ PciUsb
-PickList
-└─ PickList
-Settings
-└─ Settings
-Utils
-└─ Utils
-Weather
-└─ Weather
-Cogless
-└─ ProgressBar
-└─ GetImage
-└─ Nullify
-└─ FuzzySearch
-└─ ReadableTime
-└─ DL
-└─ Message
-```
+
+
 [Bot](#bot), [Calc](#calc), [Clippy](#clippy), [CogManager](#cogmanager), [Comic](#comic), [Encode](#encode), [Help](#help), [Humor](#humor), [IntelArk](#intelark), [Jpeg](#jpeg), [OpenCore](#opencore), [PciUsb](#pciusb), [Settings](#settings), [Weather](#weather)
 
 ## Bot
