@@ -2,7 +2,7 @@ import asyncio, discord, time, os, json
 from discord import app_commands, errors
 from discord.ext import commands
 
-build_version = "v0.4.0"
+build_version = "v0.4.1"
 # Finally yeeted the growing changelog out of here. Not sure why I put one in here to begin with, at least that you could see if you are reading this.
 
 # Do not plan on adding *too many* cogs as well... that isn't the point of this fork hence the name. Possibly will create an Extras folder and you can chose additional updated cogs to move into Cogs.

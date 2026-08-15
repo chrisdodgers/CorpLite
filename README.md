@@ -44,7 +44,7 @@ Create a venv and use `Requirements.txt` to install the required packages.
 # Current Extensions and Commands:
 
 
-[Bot](#bot), [Calc](#calc), [Clippy](#clippy), [CogManager](#cogmanager), [Comic](#comic), [Encode](#encode), [Help](#help), [Humor](#humor), [IntelArk](#intelark), [Jpeg](#jpeg), [OpenCore](#opencore), [PciUsb](#pciusb), [Settings](#settings), [Weather](#weather)
+[Bot](#bot), [Calc](#calc), [Clippy](#clippy), [CogManager](#cogmanager), [Comic](#comic), [Encode](#encode), [Help](#help), [Humor](#humor), [Hw](#hw), [IntelArk](#intelark), [Jpeg](#jpeg), [OpenCore](#opencore), [PciUsb](#pciusb), [Settings](#settings), [Weather](#weather)
 
 ## Bot
 ####	Bot Cog (5 commands) - Bot.py Extension:
@@ -136,6 +136,21 @@ Create a venv and use `Requirements.txt` to install the required packages.
     /zalgo <message>
       └─ Send a funny looking message.
 
+## Hw
+####	Hw Cog (6 commands) - Hw.py Extension:
+    /delhw <build>
+      └─ Removes a build from your build list.
+    /edithw <build> <set_main>
+      └─ Edits a build from your build list - can also rename or set your Main Build.
+    /hw <user> <build>
+      └─ Lists the hardware for either the user's main build - or the passed build.
+    /lhw <user>
+      └─ Lists only the titles of the builds for the specified user - or yourself if n...
+    /listhw <user>
+      └─ Lists the builds for the specified user - or yourself if no user passed.
+    /newhw
+      └─ Add a new hardware build.  The build added will also be set as your Main Build.
+
 ## IntelArk
 ####	IntelArk Cog (1 command) - IntelArk.py Extension:
     /iark <cpu_model>
@@ -189,7 +204,6 @@ Create a venv and use `Requirements.txt` to install the required packages.
       └─ Gets some weather, for 5 days or whatever.
     /weather <city_name>
       └─ Get some weather
-
 # Known Issues/Random Notes:
 
 - Using **/randgarfield** *(or any of the other random comic commands)* within private DMs may fail to embed. Sometimes it works, sometimes it doesn't. This also applies to **/meme** from my testing. Its a 50/50 if it embeds right within DMs.
